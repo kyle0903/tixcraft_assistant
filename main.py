@@ -24,15 +24,8 @@ class TicketQueryWorker(QThread):
         self._is_running = True
 
     def run(self):
-        import time
         start_time = time.time()
-        while self._is_running:
-            results = self.scraper.get_ticket_urls(self.url, self.arr_keyword, self.is_default_var)
-            if isinstance(results, dict) and "msg" in results:
-                self.message_signal.emit(results["msg"])
-                time.sleep(1)
-                continue
-            break
+        results = self.scraper.get_ticket_urls(self.url, self.arr_keyword, self.is_default_var)
         end_time = time.time()
         self.message_signal.emit(f"查詢時間: {end_time - start_time:.2f}秒\n")
         self.result_signal.emit(results)
