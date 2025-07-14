@@ -126,7 +126,7 @@ bash
 2. **網頁爬蟲技術**：使用 requests 和 BeautifulSoup 進行資料擷取
 3. **瀏覽器擴充功能**：Manifest V3 規範的現代化擴充功能
 4. **AI 整合**：OpenAI GPT-4 .1 用於圖片識別
-5. **API 服務開發**：FastAPI 框架建立 RESTful API
+5. **API 服務開發**：Flask API 框架建立 RESTful API
 
 ## 授權
 
