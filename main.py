@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QPushButton, QLineEdit, QLabel, 
                             QRadioButton, QListWidget, QTextEdit, QMessageBox,
                             QGroupBox, QButtonGroup)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from getTicket import TicketScraper
 import webbrowser
 import time
@@ -10,10 +10,41 @@ import sys
 from PyQt5.QtGui import QIcon
 import os
 
+class TicketQueryWorker(QThread):
+    message_signal = pyqtSignal(str)
+    result_signal = pyqtSignal(object)
+    finished_signal = pyqtSignal()
+
+    def __init__(self, scraper, url, arr_keyword, is_default_var):
+        super().__init__()
+        self.scraper = scraper
+        self.url = url
+        self.arr_keyword = arr_keyword
+        self.is_default_var = is_default_var
+        self._is_running = True
+
+    def run(self):
+        import time
+        start_time = time.time()
+        while self._is_running:
+            results = self.scraper.get_ticket_urls(self.url, self.arr_keyword, self.is_default_var)
+            if isinstance(results, dict) and "msg" in results:
+                self.message_signal.emit(results["msg"])
+                time.sleep(1)
+                continue
+            break
+        end_time = time.time()
+        self.message_signal.emit(f"查詢時間: {end_time - start_time:.2f}秒\n")
+        self.result_signal.emit(results)
+        self.finished_signal.emit()
+
+    def stop(self):
+        self._is_running = False
+
 class TicketGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.scraper = TicketScraper()
+        self.scraper = TicketScraper(print_callback=self.append_result_text)
         self.arr_keyword = []
         self.initUI()
 
@@ -257,8 +288,8 @@ class TicketGUI(QMainWindow):
         self.keyword_group.hide()
 
         # 查詢按鈕
-        query_button = QPushButton("開始查詢")
-        query_button.setStyleSheet("""
+        self.query_button = QPushButton("開始查詢")
+        self.query_button.setStyleSheet("""
             QPushButton {
                 background-color: #007bff;
                 color: white;
@@ -272,8 +303,8 @@ class TicketGUI(QMainWindow):
                 background-color: #0056b3;
             }
         """)
-        query_button.clicked.connect(self.start_query)
-        layout.addWidget(query_button)
+        self.query_button.clicked.connect(self.start_query)
+        layout.addWidget(self.query_button)
 
         # 結果顯示區
         result_group = QGroupBox("查詢結果")
@@ -346,26 +377,30 @@ class TicketGUI(QMainWindow):
             QMessageBox.critical(self, "錯誤", "網址格式有誤")
             return
             
-        self.result_text.append(f"關鍵字: {self.arr_keyword}\n開始取得購票連結...\n")
-        
-        try:
-            start_time = time.time()
-            results = self.scraper.get_ticket_urls(url, self.arr_keyword, self.is_default_var)
-            end_time = time.time()
-            self.result_text.append(f"查詢時間: {end_time - start_time:.2f}秒\n")
-            
-            if isinstance(results, list) and results:
-                for result in results:
-                    for ticket_type, ticket_url in result.items():
-                        if ticket_url and ticket_url != "(空)":
-                            webbrowser.open(ticket_url)
-                            self.result_text.append(f"已自動開啟票種: {ticket_type}\n")
-                            return
-                self.result_text.append("沒有找到可用票種\n")
-            else:
-                self.result_text.append(f"{results}\n")
-        except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"發生錯誤: {e}")
+        self.query_button.setEnabled(False)
+        self.worker = TicketQueryWorker(self.scraper, url, self.arr_keyword, self.is_default_var)
+        self.worker.message_signal.connect(self.append_result_text)
+        self.worker.result_signal.connect(self.handle_query_result)
+        self.worker.finished_signal.connect(self.query_finished)
+        self.worker.start()
+
+    def append_result_text(self, msg):
+        self.result_text.append(msg)
+
+    def handle_query_result(self, results):
+        if isinstance(results, list) and results:
+            for result in results:
+                for ticket_type, ticket_url in result.items():
+                    if ticket_url and ticket_url != "(空)":
+                        webbrowser.open(ticket_url)
+                        self.result_text.append(f"已自動開啟票種: {ticket_type}\n")
+                        return
+            self.result_text.append("沒有找到可用票種\n")
+        else:
+            self.result_text.append(f"{results}\n")
+
+    def query_finished(self):
+        self.query_button.setEnabled(True)
 
 def resource_path(relative_path):
     """取得資源檔案的絕對路徑，支援 pyinstaller 打包後的情境"""

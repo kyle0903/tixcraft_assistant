@@ -1,13 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import webbrowser
 
 class TicketScraper:
-    def __init__(self):
+    def __init__(self, print_callback=None):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+        self.print_callback = print_callback
+
+    def _print(self, msg):
+        if self.print_callback:
+            self.print_callback(str(msg))
+        else:
+            print(msg)
 
     def get_ticket_urls(self, url, arr_keyword, is_default):
         concert_name = url.split("/")[-1]
@@ -20,10 +26,10 @@ class TicketScraper:
             if href:
                 ticket_number= self._get_ticket_number(href)
                 if not ticket_number:
-                    print("重新取得購票連結中...")
+                    self._print("重新取得購票連結中...")
                     continue
                 if isinstance(ticket_number, str):
-                    print(ticket_number)
+                    self._print(ticket_number)
                     continue
                 for number in ticket_number:
                     ticket_result = self._get_ticket_enter_url(concert_name, number, arr_keyword)
@@ -68,6 +74,7 @@ class TicketScraper:
                 if tr.get('class') == ['gridc', 'fcTxt']:
                     for div in tr.find_all('div'):
                         if div.get('class') == ['text-center']:
+                            self._print(div.text.strip())
                             return div.text.strip()
             return None
         return arr_button
@@ -125,6 +132,6 @@ class TicketScraper:
                     json_str = script.string.split('var areaUrlList = ')[1].split(';')[0]
                     return json.loads(json_str)
                 except (json.JSONDecodeError, IndexError) as e:
-                    print(f"解析 areaUrlList 時發生錯誤: {e}")
+                    self._print(f"解析 areaUrlList 時發生錯誤: {e}")
                     return None
         return None
