@@ -3,7 +3,7 @@
 1. 開啟執行檔：
 
    ```powershell
-   .\dist\tixcraft_assistant.exe
+   .\dist\TixcraftAssistant.exe
    ```
 
 2. 輸入拓元活動網址（格式：`https://tixcraft.com/activity/detail/活動代碼`）
