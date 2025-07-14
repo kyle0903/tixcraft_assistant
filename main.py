@@ -7,6 +7,8 @@ from getTicket import TicketScraper
 import webbrowser
 import time
 import sys
+from PyQt5.QtGui import QIcon
+import os
 
 class TicketGUI(QMainWindow):
     def __init__(self):
@@ -365,8 +367,15 @@ class TicketGUI(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "錯誤", f"發生錯誤: {e}")
 
+def resource_path(relative_path):
+    """取得資源檔案的絕對路徑，支援 pyinstaller 打包後的情境"""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = TicketGUI()
+    window.setWindowIcon(QIcon(resource_path("icon.ico")))
     window.show()
     sys.exit(app.exec_())
