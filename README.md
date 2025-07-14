@@ -50,21 +50,21 @@
 
 ### 環境需求
 
-bash
-
-`pip install PyQt5 requests beautifulsoup4`
+```powershell
+pip install PyQt5 requests beautifulsoup4
+```
 
 ### 使用方法
 
 1. 執行主程式：
 
-   bash
+   ```powershell
+   python main.py
+   ```
 
-   `python main.py`
-
-   bash
-
-   `.\dist\tixcraft_assistant.exe`
+   ```powershell
+   .\dist\tixcraft_assistant.exe
+   ```
 
 2. 輸入拓元活動網址（格式：`https://tixcraft.com/activity/detail/活動代碼`）
 3. 選擇查詢設定：
@@ -98,6 +98,55 @@ bash
    - 選擇票數
    - (可選) 自動提交訂單
 
+### AI 驗證碼識別服務
+
+### 環境設定
+
+```powershell
+pip install flask flask-cors openai python-dotenv
+```
+
+### 環境變數
+
+建立 `.env` 檔案：
+
+`OPENAI_API_KEY=your_openai_api_key_here`
+
+### 啟動服務
+
+```powershell
+python app.py
+```
+
+## API 文件
+
+### 驗證碼識別 API
+
+### POST `/analyze-image`
+
+識別驗證碼圖片中的文字
+
+**請求格式：**
+
+```json
+{
+  "image": "base64_encoded_image_data"
+}
+```
+
+**回應格式：**
+
+```json
+{
+  "text": "abcd",
+  "time": 1.23
+}
+```
+
+### 測試端點
+
+- `GET /` - 健康檢查
+
 ## 注意事項
 
 ### 使用前提醒
@@ -126,7 +175,7 @@ bash
 2. **網頁爬蟲技術**：使用 requests 和 BeautifulSoup 進行資料擷取
 3. **瀏覽器擴充功能**：Manifest V3 規範的現代化擴充功能
 4. **AI 整合**：OpenAI GPT-4 .1 用於圖片識別
-5. **API 服務開發**：Flask API 框架建立 RESTful API
+5. **API 服務開發**：FastAPI 框架建立 RESTful API
 
 ## 授權
 
