@@ -25,6 +25,7 @@ class TicketScraper:
             href = self._extract_buy_link(response)
             if href:
                 ticket_number= self._get_ticket_number(href)
+  
                 if not ticket_number:
                     self._print("重新取得購票連結中...")
                     continue
@@ -84,6 +85,11 @@ class TicketScraper:
             return "找不到票號"
         
         url = f"https://tixcraft.com/ticket/area/{concert_name}/{number}"
+        # request url
+        response = self._make_request(url)
+        if "areaUrlList" not in str(response):
+            return {"直接購票":url}
+   
         urls = self._find_ticket_urls_with_keyword(url, arr_keyword)
         print("----------------------------------------------------")
         
