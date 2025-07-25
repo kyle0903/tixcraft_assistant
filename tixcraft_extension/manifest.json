@@ -4,9 +4,7 @@
   "version": "1.0",
   "description": "自動填寫拓元網站驗證碼以及票數",
   "permissions": ["storage", "activeTab"],
-  "host_permissions": [
-    "https://tixcraft-ocr.onrender.com/*"
-  ],
+  "host_permissions": ["https://tixcraft-assistant.onrender.com/*"],
   "action": {
     "default_popup": "popup.html"
   },

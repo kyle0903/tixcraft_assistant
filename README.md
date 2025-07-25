@@ -58,7 +58,7 @@ pip install PyQt5 requests beautifulsoup4
 ### 使用前提醒
 
 - ⚠️ **請確保已登入拓元會員**
-- ⚠️ **開始搶票的前 15 分鐘先到 https://tixcraft-ocr.onrender.com 喚醒伺服器，否則辨識驗證碼時會嚴重 delay(因雲端伺服器為免費版有此限制，請見諒)**
+- ⚠️ **開始搶票的前 15 分鐘先到 https://tixcraft-assistant.onrender.com 喚醒伺服器，否則辨識驗證碼時會嚴重 delay(因雲端伺服器為免費版有此限制，請見諒)**
 - ⚠️ **請遵守拓元網站使用條款**
 - ⚠️ **本工具僅供學習研究使用**
 

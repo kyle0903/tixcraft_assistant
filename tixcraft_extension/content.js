@@ -23,15 +23,18 @@ async function getCode(imageUrl) {
       throw new Error("無法轉換圖片為 base64");
     }
 
-    const response = await fetch("https://tixcraft-ocr.onrender.com/analyze-image", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        image: base64Image
-      }),
-    });
+    const response = await fetch(
+      "https://tixcraft-assistant.onrender.com/analyze-image",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: base64Image,
+        }),
+      }
+    );
 
     if (!response.ok) {
       console.log(response);
