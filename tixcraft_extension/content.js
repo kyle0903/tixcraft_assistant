@@ -75,7 +75,7 @@ async function checkAndFillVerifyCode() {
 
     console.log(captchaImageUrl);
 
-    selects.forEach((select) => {
+    for (const select of selects) {
       // 檢查這個 select 是否有 1,2,3,4 的選項
       const hasValidOptions = Array.from(select.options).some((option) =>
         ["1", "2", "3", "4"].includes(option.value)
@@ -92,8 +92,9 @@ async function checkAndFillVerifyCode() {
             select.value = "1";
           }
         });
+        break; // 找到第一個就跳出
       }
-    });
+    }
 
     if (agreeInput) {
       agreeInput.checked = true;
