@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "拓元搶票助手",
-  "version": "1.0",
-  "description": "自動填寫拓元網站驗證碼以及票數",
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://tixcraft-assistant.onrender.com/*"],
+  "version": "2.0",
+  "description": "自動搶票、填寫驗證碼、選擇票種和票數",
+  "permissions": ["storage", "activeTab", "tabs", "notifications"],
+  "host_permissions": [
+    "https://tixcraft.com/*",
+    "https://tixcraft-assistant.onrender.com/*"
+  ],
   "action": {
     "default_popup": "popup.html"
   },
@@ -14,7 +17,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://tixcraft.com/ticket/ticket/*"],
+      "matches": [
+        "https://tixcraft.com/activity/detail/*",
+        "https://tixcraft.com/activity/game/*",
+        "https://tixcraft.com/ticket/area/*",
+        "https://tixcraft.com/ticket/ticket/*"
+      ],
       "js": ["content.js"],
       "type": "module"
     }

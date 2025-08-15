@@ -54,18 +54,58 @@
     <div class="container">
       <h3>拓元搶票助手</h3>
 
+      <!-- 自動搶票設定 -->
       <div class="setting-group">
+        <h4>🚀 自動搶票</h4>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="autoGrab" />
+            啟用自動搶票 (監控購買按鈕)
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="autoSelectTicket" />
+            自動選擇票種
+          </label>
+        </div>
+      </div>
+
+      <!-- 票種篩選設定 -->
+      <div class="setting-group">
+        <h4>🎫 票種篩選</h4>
+        <div class="setting-item">
+          <label for="keywords">關鍵字篩選 (用逗號分隔)：</label>
+          <input type="text" id="keywords" placeholder="例如: VIP,搖滾區,1F" />
+          <small>留空則選擇第一個可用票種</small>
+        </div>
+      </div>
+
+      <!-- 購票設定 -->
+      <div class="setting-group">
+        <h4>💳 購票設定</h4>
         <div class="setting-item">
           <label for="ticketCount">票券數量：</label>
           <input type="number" id="ticketCount" min="1" max="4" value="1" />
         </div>
-
         <div class="setting-item">
-          <label for="autoSubmit">自動提交：</label>
-          <input type="checkbox" id="autoSubmit" />
+          <label>
+            <input type="checkbox" id="autoSubmit" />
+            自動提交訂單
+          </label>
         </div>
+      </div>
 
-      <button id="saveSettings">儲存設定</button>
+      <!-- 狀態顯示 -->
+      <div class="setting-group">
+        <h4>📊 狀態</h4>
+        <div id="currentStatus">載入中...</div>
+      </div>
+
+      <button id="saveSettings">💾 儲存設定</button>
+      <button id="stopAll" style="background-color: #f44336">
+        ⏹️ 停止所有自動化
+      </button>
       <div id="status" class="status"></div>
     </div>
 

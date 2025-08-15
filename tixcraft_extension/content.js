@@ -1,3 +1,10 @@
+// === 拓元搶票助手 - 內容腳本 ===
+console.log("拓元搶票助手已載入", location.href);
+
+// 全域變數
+let isRunning = false;
+let settings = {};
+
 // 將圖片 URL 轉換為 base64
 async function urlToBase64(url) {
   try {
@@ -120,5 +127,243 @@ async function checkAndFillVerifyCode() {
   }
 }
 
-// 直接執行函數，而不是等待 DOMContentLoaded
-checkAndFillVerifyCode();
+// === 頁面類型檢測和主要邏輯 ===
+function detectPageType() {
+  const url = location.href;
+
+  if (url.includes("/activity/detail/")) {
+    return "activity_detail";
+  } else if (url.includes("/activity/game/")) {
+    return "activity_game";
+  } else if (url.includes("/ticket/area/")) {
+    return "ticket_area";
+  } else if (url.includes("/ticket/ticket/")) {
+    return "ticket_purchase";
+  }
+
+  return "unknown";
+}
+
+// === 活動詳情頁面處理 ===
+class ActivityDetailHandler {
+  constructor() {
+    this.console = console;
+  }
+
+  // 尋找購買按鈕
+  findBuyButton() {
+    const buyButtons = document.querySelectorAll("li.buy a");
+    return buyButtons.length > 0 ? buyButtons[0] : null;
+  }
+
+  // 檢查是否開賣
+  async checkAndClickBuy() {
+    if (!settings.autoGrab) return;
+
+    const buyButton = this.findBuyButton();
+    if (buyButton) {
+      this.console.log("✅ 找到購買按鈕，準備點擊");
+
+      // 顯示通知
+      this.showNotification("找到購買按鈕，正在進入購票頁面...");
+
+      // 點擊購買按鈕
+      buyButton.click();
+      return true;
+    }
+
+    return false;
+  }
+
+  // 持續監控購買按鈕
+  async monitorBuyButton() {
+    if (!settings.autoGrab || isRunning) return;
+
+    isRunning = true;
+    this.console.log("🔄 開始監控購買按鈕...");
+
+    const checkInterval = setInterval(async () => {
+      const found = await this.checkAndClickBuy();
+      if (found) {
+        clearInterval(checkInterval);
+        isRunning = false;
+      }
+    }, 1000); // 每秒檢查一次
+
+    // 30分鐘後停止監控
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      isRunning = false;
+      this.console.log("⏰ 監控時間結束");
+    }, 30 * 60 * 1000);
+  }
+
+  showNotification(message) {
+    // 在頁面上顯示通知
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  }
+}
+
+// === 場次選擇頁面處理 ===
+class TicketAreaHandler {
+  constructor() {
+    this.console = console;
+  }
+
+  // 根據關鍵字尋找票種
+  findTicketsByKeyword() {
+    const tickets = [];
+    const ticketElements = document.querySelectorAll("li a[id]");
+
+    ticketElements.forEach((element) => {
+      const text = element.textContent.toLowerCase();
+      const excludeKeywords = ["wheelchair", "身障", "愛心", "陪同"];
+
+      // 排除特殊票種
+      if (excludeKeywords.some((keyword) => text.includes(keyword))) {
+        return;
+      }
+
+      // 檢查是否符合關鍵字
+      let matches = true;
+      if (settings.keywords && settings.keywords.length > 0) {
+        matches = settings.keywords.some((keyword) =>
+          text.includes(keyword.toLowerCase())
+        );
+      }
+
+      if (matches) {
+        tickets.push({
+          element: element,
+          text: element.textContent.trim(),
+          id: element.id,
+        });
+      }
+    });
+
+    return tickets;
+  }
+
+  // 自動選擇票種
+  async autoSelectTicket() {
+    if (!settings.autoSelectTicket) return;
+
+    const tickets = this.findTicketsByKeyword();
+
+    if (tickets.length > 0) {
+      const selectedTicket = tickets[0]; // 選擇第一個符合的票種
+      this.console.log("🎫 自動選擇票種:", selectedTicket.text);
+
+      // 點擊票種
+      selectedTicket.element.click();
+      return true;
+    } else {
+      this.console.log("❌ 找不到符合條件的票種");
+
+      // 如果沒有關鍵字限制，選擇第一個可用票種
+      if (!settings.keywords || settings.keywords.length === 0) {
+        const allTickets = document.querySelectorAll("li a[id]");
+        if (allTickets.length > 0) {
+          this.console.log("🎫 選擇第一個可用票種");
+          allTickets[0].click();
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+}
+
+// === 購票頁面處理（原有的驗證碼功能）===
+class TicketPurchaseHandler {
+  async handle() {
+    await checkAndFillVerifyCode();
+  }
+}
+
+// === 主要執行邏輯 ===
+async function main() {
+  // 載入設定
+  await loadSettings();
+
+  const pageType = detectPageType();
+  console.log("📍 目前頁面類型:", pageType);
+
+  switch (pageType) {
+    case "activity_detail":
+      const activityHandler = new ActivityDetailHandler();
+      await activityHandler.monitorBuyButton();
+      break;
+
+    case "ticket_area":
+      const areaHandler = new TicketAreaHandler();
+      await areaHandler.autoSelectTicket();
+      break;
+
+    case "ticket_purchase":
+      const purchaseHandler = new TicketPurchaseHandler();
+      await purchaseHandler.handle();
+      break;
+
+    default:
+      console.log("🔍 未知頁面類型，等待用戶操作");
+  }
+}
+
+// 載入設定
+async function loadSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(
+      ["autoGrab", "autoSelectTicket", "keywords", "ticketCount", "autoSubmit"],
+      (result) => {
+        settings = {
+          autoGrab: result.autoGrab || false,
+          autoSelectTicket: result.autoSelectTicket || false,
+          keywords: result.keywords || [],
+          ticketCount: result.ticketCount || "1",
+          autoSubmit: result.autoSubmit || false,
+        };
+        console.log("⚙️ 已載入設定:", settings);
+        resolve();
+      }
+    );
+  });
+}
+
+// 監聽來自 popup 的訊息
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "updateSettings") {
+    settings = request.settings;
+    console.log("⚙️ 設定已更新:", settings);
+    sendResponse({ success: true });
+  } else if (request.action === "getStatus") {
+    sendResponse({
+      isRunning: isRunning,
+      pageType: detectPageType(),
+      settings: settings,
+    });
+  }
+});
+
+// 啟動主要邏輯
+main();
