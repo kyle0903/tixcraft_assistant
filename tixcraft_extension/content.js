@@ -65,7 +65,6 @@ function isPageRefresh() {
 // 監聽頁面變化
 async function checkAndFillVerifyCode() {
   try {
-    console.log("是否為重新整理:", isPageRefresh());
     // 使用更精確的選擇器
     const verifyCodeInput = document.getElementById("TicketForm_verifyCode");
 
@@ -79,8 +78,6 @@ async function checkAndFillVerifyCode() {
     const captchaImage = document.getElementById("TicketForm_verifyCode-image");
 
     const captchaImageUrl = captchaImage.src;
-
-    console.log(captchaImageUrl);
 
     for (const select of selects) {
       // 檢查這個 select 是否有 1,2,3,4 的選項
@@ -152,8 +149,18 @@ class ActivityDetailHandler {
 
   // 尋找購買按鈕
   findBuyButton() {
-    const buyButtons = document.querySelectorAll("li.buy a");
-    return buyButtons.length > 0 ? buyButtons[0] : null;
+    // 尋找具有特定 class 的按鈕
+    const buyButton = document.querySelectorAll(
+      ".btn.btn-primary.text-bold.m-0"
+    );
+    let buyButtonUrl = null;
+    for (const button of buyButton) {
+      if (button.disabled) {
+        continue;
+      }
+      buyButtonUrl = button.dataset.href;
+    }
+    return buyButtonUrl;
   }
 
   // 檢查是否開賣
@@ -162,40 +169,49 @@ class ActivityDetailHandler {
 
     const buyButton = this.findBuyButton();
     if (buyButton) {
-      this.console.log("✅ 找到購買按鈕，準備點擊");
-
-      // 顯示通知
       this.showNotification("找到購買按鈕，正在進入購票頁面...");
-
-      // 點擊購買按鈕
-      buyButton.click();
+      window.location.href = buyButton;
       return true;
     }
-
     return false;
   }
 
-  // 持續監控購買按鈕
+  // 檢查是否顯示倒數計時
+  checkCountdownTimer() {
+    const countdownTimer = document.querySelectorAll('.gridc.fcTxt');
+    if (countdownTimer[0].innerHTML.includes('text-center')) {
+      this.console.log(countdownTimer[0].innerText.split('\n')[1].trim());
+      return true;
+    }
+    return false;
+  }
+
+    // 簡單的搶票邏輯：檢查並點擊或刷新
   async monitorBuyButton() {
-    if (!settings.autoGrab || isRunning) return;
+    if (!settings.autoGrab) return;
 
-    isRunning = true;
-    this.console.log("🔄 開始監控購買按鈕...");
+    this.console.log("🔄 檢查購買按鈕狀態...");
+    
+    // 先檢查是否有購買按鈕
+    const buyButtonFound = await this.checkAndClickBuy();
+    if (buyButtonFound) {
+      this.console.log("✅ 找到購買按鈕，已點擊！");
+      return;
+    }
 
-    const checkInterval = setInterval(async () => {
-      const found = await this.checkAndClickBuy();
-      if (found) {
-        clearInterval(checkInterval);
-        isRunning = false;
-      }
-    }, 1000); // 每秒檢查一次
-
-    // 30分鐘後停止監控
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      isRunning = false;
-      this.console.log("⏰ 監控時間結束");
-    }, 30 * 60 * 1000);
+    // 如果沒有購買按鈕，檢查是否有倒數計時
+    const hasCountdown = this.checkCountdownTimer();
+    
+    if (hasCountdown) {
+      this.showNotification("檢測到倒數計時，刷新頁面中...");
+      
+      // 1秒後刷新頁面
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    } else {
+      this.showNotification("未檢測到倒數計時，手動刷新或檢查頁面狀態");
+    }
   }
 
   showNotification(message) {
@@ -271,26 +287,50 @@ class TicketAreaHandler {
 
     if (tickets.length > 0) {
       const selectedTicket = tickets[0]; // 選擇第一個符合的票種
-      this.console.log("🎫 自動選擇票種:", selectedTicket.text);
+      this.console.log("🎫 自動選擇票種:" + "\n" + selectedTicket.text);
 
       // 點擊票種
       selectedTicket.element.click();
       return true;
     } else {
-      this.console.log("❌ 找不到符合條件的票種");
-
       // 如果沒有關鍵字限制，選擇第一個可用票種
-      if (!settings.keywords || settings.keywords.length === 0) {
+      if (settings.keywords && settings.keywords.length > 0) {
+        this.showNotification("🎫 找不到符合條件的票種，正在選擇第一個可用票種...");
         const allTickets = document.querySelectorAll("li a[id]");
         if (allTickets.length > 0) {
-          this.console.log("🎫 選擇第一個可用票種");
+          this.console.log("🎫 選擇第一個可用票種：" + allTickets[0].textContent);
           allTickets[0].click();
           return true;
         }
       }
     }
 
+    this.showNotification("❌ 很可惜，已經沒有票了，可以再重新整理試試看😭");
     return false;
+  }
+
+  showNotification(message) {
+    // 在頁面上顯示通知
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
   }
 }
 
@@ -310,10 +350,11 @@ async function main() {
   console.log("📍 目前頁面類型:", pageType);
 
   switch (pageType) {
-    case "activity_detail":
+    case "activity_game":
       const activityHandler = new ActivityDetailHandler();
       await activityHandler.monitorBuyButton();
       break;
+    
 
     case "ticket_area":
       const areaHandler = new TicketAreaHandler();
