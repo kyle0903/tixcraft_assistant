@@ -7,8 +7,19 @@ let isServerAwake = false;
 // 載入已儲存的設定
 function loadSettings() {
   chrome.storage.sync.get(
-    ["autoGrab", "autoSelectTicket", "keywords", "ticketCount", "autoSubmit"],
+    [
+      "autoRedirect",
+      "autoGrab",
+      "autoSelectTicket",
+      "keywords",
+      "ticketCount",
+      "autoSubmit",
+    ],
     function (result) {
+      // 自動跳轉設定 (預設為 false)
+      document.getElementById("autoRedirect").checked =
+        result.autoRedirect || false;
+
       // 自動搶票設定
       document.getElementById("autoGrab").checked = result.autoGrab || false;
       document.getElementById("autoSelectTicket").checked =
@@ -208,6 +219,7 @@ document
       : [];
 
     const settings = {
+      autoRedirect: document.getElementById("autoRedirect").checked,
       autoGrab: document.getElementById("autoGrab").checked,
       autoSelectTicket: document.getElementById("autoSelectTicket").checked,
       keywords: keywords,
@@ -239,6 +251,7 @@ document
 // 停止所有自動化
 document.getElementById("stopAll").addEventListener("click", function () {
   const settings = {
+    autoRedirect: false,
     autoGrab: false,
     autoSelectTicket: false,
     autoSubmit: false,
@@ -246,6 +259,7 @@ document.getElementById("stopAll").addEventListener("click", function () {
 
   chrome.storage.sync.set(settings, function () {
     // 更新 UI
+    document.getElementById("autoRedirect").checked = false;
     document.getElementById("autoGrab").checked = false;
     document.getElementById("autoSelectTicket").checked = false;
     document.getElementById("autoSubmit").checked = false;

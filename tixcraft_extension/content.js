@@ -178,20 +178,20 @@ class ActivityDetailHandler {
 
   // 檢查是否顯示倒數計時
   checkCountdownTimer() {
-    const countdownTimer = document.querySelectorAll('.gridc.fcTxt');
-    if (countdownTimer[0].innerHTML.includes('text-center')) {
-      this.console.log(countdownTimer[0].innerText.split('\n')[1].trim());
+    const countdownTimer = document.querySelectorAll(".gridc.fcTxt");
+    if (countdownTimer[0].innerHTML.includes("text-center")) {
+      this.console.log(countdownTimer[0].innerText.split("\n")[1].trim());
       return true;
     }
     return false;
   }
 
-    // 簡單的搶票邏輯：檢查並點擊或刷新
+  // 簡單的搶票邏輯：檢查並點擊或刷新
   async monitorBuyButton() {
     if (!settings.autoGrab) return;
 
     this.console.log("🔄 檢查購買按鈕狀態...");
-    
+
     // 先檢查是否有購買按鈕
     const buyButtonFound = await this.checkAndClickBuy();
     if (buyButtonFound) {
@@ -201,10 +201,10 @@ class ActivityDetailHandler {
 
     // 如果沒有購買按鈕，檢查是否有倒數計時
     const hasCountdown = this.checkCountdownTimer();
-    
+
     if (hasCountdown) {
       this.showNotification("檢測到倒數計時，刷新頁面中...");
-      
+
       // 1秒後刷新頁面
       setTimeout(() => {
         location.reload();
@@ -295,10 +295,14 @@ class TicketAreaHandler {
     } else {
       // 如果沒有關鍵字限制，選擇第一個可用票種
       if (settings.keywords && settings.keywords.length > 0) {
-        this.showNotification("🎫 找不到符合條件的票種，正在選擇第一個可用票種...");
+        this.showNotification(
+          "🎫 找不到符合條件的票種，正在選擇第一個可用票種..."
+        );
         const allTickets = document.querySelectorAll("li a[id]");
         if (allTickets.length > 0) {
-          this.console.log("🎫 選擇第一個可用票種：" + allTickets[0].textContent);
+          this.console.log(
+            "🎫 選擇第一個可用票種：" + allTickets[0].textContent
+          );
           allTickets[0].click();
           return true;
         }
@@ -354,7 +358,6 @@ async function main() {
       const activityHandler = new ActivityDetailHandler();
       await activityHandler.monitorBuyButton();
       break;
-    
 
     case "ticket_area":
       const areaHandler = new TicketAreaHandler();
@@ -375,9 +378,17 @@ async function main() {
 async function loadSettings() {
   return new Promise((resolve) => {
     chrome.storage.sync.get(
-      ["autoGrab", "autoSelectTicket", "keywords", "ticketCount", "autoSubmit"],
+      [
+        "autoRedirect",
+        "autoGrab",
+        "autoSelectTicket",
+        "keywords",
+        "ticketCount",
+        "autoSubmit",
+      ],
       (result) => {
         settings = {
+          autoRedirect: result.autoRedirect || false,
           autoGrab: result.autoGrab || false,
           autoSelectTicket: result.autoSelectTicket || false,
           keywords: result.keywords || [],

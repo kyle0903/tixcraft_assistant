@@ -6,6 +6,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
   // 設定預設值
   chrome.storage.sync.set({
+    autoRedirect: false, // 預設不自動跳轉
     autoGrab: false,
     autoSelectTicket: false,
     keywords: [],
@@ -23,10 +24,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     tab.url.includes("tixcraft.com")
   ) {
     console.log("拓元網站頁面已載入:", tab.url);
-    // 如果頁面是detail頁面則直接跳轉到game頁面
-    if (tab.url.includes("detail")) {
-      chrome.tabs.update(tabId, { url: tab.url.replace("detail", "game") });
-    }
+
+    // 檢查使用者是否啟用自動跳轉
+    chrome.storage.sync.get(["autoRedirect"], (result) => {
+      if (result.autoRedirect && tab.url.includes("detail")) {
+        console.log("自動跳轉已啟用，將 detail 頁面跳轉到 game 頁面");
+        chrome.tabs.update(tabId, { url: tab.url.replace("detail", "game") });
+      }
+    });
 
     // 可以在這裡添加額外的邏輯，例如通知內容腳本
     chrome.tabs
