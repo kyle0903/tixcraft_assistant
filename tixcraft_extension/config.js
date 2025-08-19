@@ -10,11 +10,11 @@ class ConfigManager {
 
     // 搶票功能設定
     autoRedirect: false,
-    autoGrab: false,
-    autoSelectTicket: false,
+    autoGrab: true,
+    autoSelectTicket: true,
     keywords: [],
     ticketCount: "1",
-    autoSubmit: false,
+    autoSubmit: true,
   };
 
   // 取得設定
@@ -87,6 +87,10 @@ class ConfigManager {
       if (isNaN(count) || count < 1 || count > 4) {
         errors.push("票券數量必須介於 1-4 之間");
       }
+    }
+
+    if (!config.apiKey) {
+      errors.push("API Key 不能為空");
     }
 
     return errors;

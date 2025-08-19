@@ -1,5 +1,13 @@
 // === 拓元搶票助手 - 彈出視窗腳本 ===
 
+// 追蹤 API 測試狀態
+let apiTestStatus = {
+  tested: false,
+  success: false,
+  apiUrl: "",
+  apiKey: "",
+};
+
 // 載入已儲存的設定
 async function loadSettings() {
   try {
@@ -100,31 +108,25 @@ document
         autoSubmit: document.getElementById("autoSubmit").checked,
       };
 
-      const testApiResult = document.getElementById("testApiResult");
-      if (document.getElementById("testApi").click()) {
-        const response = await fetch(`${newConfig.apiUrl}/health`, {
-          headers: {
-            "X-API-Key": newConfig.apiKey,
-          },
-        });
+      // 檢查 API 設定是否需要測試
+      const apiChanged =
+        apiTestStatus.apiUrl !== newConfig.apiUrl ||
+        apiTestStatus.apiKey !== newConfig.apiKey;
 
-        if (!response.ok) {
-          testApiResult.textContent =
-            "API 連線測試失敗，請檢查 API Key 是否正確";
-          testApiResult.style.color = "#f44336";
-          return;
+      if (
+        newConfig.apiUrl &&
+        newConfig.apiKey &&
+        (!apiTestStatus.tested || !apiTestStatus.success || apiChanged)
+      ) {
+        const confirmSave = confirm(
+          "⚠️ 警告：請先確定有測試過 API 可以連線，否則 API KEY錯誤會造成無法自動辨別驗證碼。\n\n" +
+            "建議先點擊「測試 API 連線」按鈕確認連線成功後再儲存設定。\n\n" +
+            "是否仍要繼續儲存？"
+        );
+
+        if (!confirmSave) {
+          return; // 使用者選擇不儲存
         }
-
-        const result = await response.json();
-        if (result.message !== "OK") {
-          testApiResult.textContent =
-            "API 連線測試失敗，請檢查 API Key 是否正確";
-          testApiResult.style.color = "#f44336";
-          return;
-        }
-
-        testApiResult.textContent = "API 連線測試成功";
-        testApiResult.style.color = "#4caf50";
       }
 
       // 驗證設定
@@ -168,6 +170,91 @@ document
     }
   });
 
+// 測試 API 連線
+document.getElementById("testApi").addEventListener("click", async function () {
+  const testApiResult = document.getElementById("apiTestResult");
+  const testButton = document.getElementById("testApi");
+
+  // 取得當前的 API 設定
+  const apiUrl = document.getElementById("apiUrl").value.trim();
+  const apiKey = document.getElementById("apiKey").value.trim();
+
+  if (!apiUrl) {
+    testApiResult.textContent = "請先設定 API 網址";
+    testApiResult.style.color = "#f44336";
+    return;
+  }
+
+  if (!apiKey) {
+    testApiResult.textContent = "請先設定 API Key";
+    testApiResult.style.color = "#f44336";
+    return;
+  }
+
+  // 顯示測試中狀態
+  testButton.disabled = true;
+  testButton.textContent = "🔄 測試中...";
+  testApiResult.textContent = "正在測試 API 連線...";
+  testApiResult.style.color = "#2196f3";
+
+  try {
+    const response = await fetch(`${apiUrl}/health`, {
+      method: "GET",
+      headers: {
+        "X-API-Key": apiKey,
+        "Content-Type": "application/json",
+      },
+      timeout: 10000,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.message === "OK" || result.status === "ok") {
+      testApiResult.textContent = "✅ API 連線測試成功";
+      testApiResult.style.color = "#4caf50";
+
+      // 更新測試狀態
+      apiTestStatus = {
+        tested: true,
+        success: true,
+        apiUrl: apiUrl,
+        apiKey: apiKey,
+      };
+    } else {
+      testApiResult.textContent = "❌ API 回應格式不正確";
+      testApiResult.style.color = "#f44336";
+
+      // 更新測試狀態
+      apiTestStatus = {
+        tested: true,
+        success: false,
+        apiUrl: apiUrl,
+        apiKey: apiKey,
+      };
+    }
+  } catch (error) {
+    console.error("API 測試失敗:", error);
+    testApiResult.textContent = `❌ 連線失敗，請檢查 API Key 或 API 網址是否正確`;
+    testApiResult.style.color = "#f44336";
+
+    // 更新測試狀態
+    apiTestStatus = {
+      tested: true,
+      success: false,
+      apiUrl: apiUrl,
+      apiKey: apiKey,
+    };
+  } finally {
+    // 恢復按鈕狀態
+    testButton.disabled = false;
+    testButton.textContent = "🔌測試 API 連線";
+  }
+});
+
 // 停止所有自動化
 document.getElementById("stopAll").addEventListener("click", async function () {
   try {
@@ -208,10 +295,32 @@ document.getElementById("stopAll").addEventListener("click", async function () {
   }
 });
 
+// 重置 API 測試狀態
+function resetApiTestStatus() {
+  apiTestStatus = {
+    tested: false,
+    success: false,
+    apiUrl: "",
+    apiKey: "",
+  };
+
+  const testApiResult = document.getElementById("apiTestResult");
+  testApiResult.textContent = "API 設定已變更，請重新測試連線";
+  testApiResult.style.color = "#ff9800";
+}
+
 // 頁面載入時執行
 document.addEventListener("DOMContentLoaded", function () {
   loadSettings();
   loadStatus();
+
+  // 監聽 API 設定變更
+  document
+    .getElementById("apiUrl")
+    .addEventListener("input", resetApiTestStatus);
+  document
+    .getElementById("apiKey")
+    .addEventListener("input", resetApiTestStatus);
 
   // 每3秒更新一次狀態
   setInterval(loadStatus, 3000);
