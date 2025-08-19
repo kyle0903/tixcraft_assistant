@@ -3,7 +3,6 @@ from flask_cors import CORS
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
-import base64
 import time
 
 # 載入環境變數
