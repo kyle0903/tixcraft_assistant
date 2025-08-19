@@ -13,32 +13,21 @@ app = Flask(__name__)
 CORS(app)  # 允許跨域請求
 # 初始化 OpenAI 客戶端
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-x_api_key = os.getenv('X_API_KEY')
+x_api_key = os.getenv('X-API-KEY')
 
 @app.route('/')
 def index():
-    print("Hello, Worlds!")
-    return jsonify({'message': 'Hello, World!'})
-
-@app.route('/login', methods=['GET'])
-def login():
-    client_api_key = request.headers.get('X_API_KEY')
+    client_api_key = request.headers.get('X-API-Key')
     if client_api_key != x_api_key:
         return jsonify({'message': 'Unauthorized'}), 401
-    return jsonify({'message': 'login!'})
-
-# 測試圖片轉換base64
-@app.route('/test-image', methods=['POST'])
-def test_image():
-    # 上傳圖片
-    file = request.files['file']
-    base64_image = base64.b64encode(file.read()).decode('utf-8')
-
-    return jsonify({'image': base64_image})
+    return jsonify({'message': 'Hello, World!'})
 
 @app.route('/analyze-image', methods=['POST'])
 def analyze_image():
     try:
+        client_api_key = request.headers.get('X-API-Key')
+        if client_api_key != x_api_key:
+            return jsonify({'message': 'Unauthorized'}), 401
         data = request.json
         base64_image = data.get('image')
 
@@ -83,7 +72,6 @@ def analyze_image():
         return jsonify({'text': response.choices[0].message.content, 'time': end_time - start_time})
 
     except Exception as e:
-        print(f"Error: {str(e)}")  # 添加錯誤日誌
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
