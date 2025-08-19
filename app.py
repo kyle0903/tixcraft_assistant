@@ -18,6 +18,14 @@ x_api_key = os.getenv('X-API-KEY')
 def index():
     return jsonify({'message': 'Hello, World!'})
 
+@app.route('/health', methods=['GET'])
+def health():
+    client_api_key = request.headers.get('X-API-Key')
+    if client_api_key != x_api_key:
+        return jsonify({'message': 'Unauthorized'}), 401
+    else:
+        return jsonify({'message': 'OK'})
+
 @app.route('/analyze-image', methods=['POST'])
 def analyze_image():
     try:

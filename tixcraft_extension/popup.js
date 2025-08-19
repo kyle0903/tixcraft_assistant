@@ -1,41 +1,33 @@
 // === 拓元搶票助手 - 彈出視窗腳本 ===
 
-// 全域變數
-let serverWakeTime = null;
-let isServerAwake = false;
-
 // 載入已儲存的設定
-function loadSettings() {
-  chrome.storage.sync.get(
-    [
-      "autoRedirect",
-      "autoGrab",
-      "autoSelectTicket",
-      "keywords",
-      "ticketCount",
-      "autoSubmit",
-    ],
-    function (result) {
-      // 自動跳轉設定 (預設為 false)
-      document.getElementById("autoRedirect").checked =
-        result.autoRedirect || false;
+async function loadSettings() {
+  try {
+    const config = await ConfigManager.getConfig();
 
-      // 自動搶票設定
-      document.getElementById("autoGrab").checked = result.autoGrab || false;
-      document.getElementById("autoSelectTicket").checked =
-        result.autoSelectTicket || false;
+    // API 設定
+    document.getElementById("apiUrl").value = config.apiUrl || "";
+    document.getElementById("apiKey").value = config.apiKey || "";
 
-      // 票種篩選
-      document.getElementById("keywords").value = result.keywords
-        ? result.keywords.join(",")
-        : "";
+    // 自動搶票設定
+    document.getElementById("autoRedirect").checked =
+      config.autoRedirect || false;
+    document.getElementById("autoGrab").checked = config.autoGrab || false;
+    document.getElementById("autoSelectTicket").checked =
+      config.autoSelectTicket || false;
 
-      // 購票設定
-      document.getElementById("ticketCount").value = result.ticketCount || "1";
-      document.getElementById("autoSubmit").checked =
-        result.autoSubmit || false;
-    }
-  );
+    // 票種篩選
+    const keywordsValue = Array.isArray(config.keywords)
+      ? config.keywords.join(",")
+      : config.keywords || "";
+    document.getElementById("keywords").value = keywordsValue;
+
+    // 購票設定
+    document.getElementById("ticketCount").value = config.ticketCount || "1";
+    document.getElementById("autoSubmit").checked = config.autoSubmit || false;
+  } catch (error) {
+    console.error("載入設定失敗:", error);
+  }
 }
 
 // 載入目前狀態
@@ -56,7 +48,7 @@ function loadStatus() {
             }</div>
           `;
           } else {
-            statusDiv.textContent = "請選擇一個拓元網站的活動並使用此擴充功能";
+            statusDiv.textContent = "請在拓元網站頁面中使用";
           }
         }
       );
@@ -78,156 +70,79 @@ function getPageTypeName(pageType) {
   return names[pageType] || "未知";
 }
 
-// 檢查伺服器狀態
-async function checkServerStatus() {
-  const statusDiv = document.getElementById("serverStatus");
-  statusDiv.textContent = "檢查中...";
-
-  try {
-    const response = await fetch("https://tixcraft-assistant.onrender.com", {
-      method: "GET",
-      timeout: 10000,
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.message === "Hello, World!") {
-        isServerAwake = true;
-        statusDiv.textContent = "✅ 伺服器已喚醒";
-        statusDiv.style.color = "#4CAF50";
-        return true;
-      }
-    }
-
-    isServerAwake = false;
-    statusDiv.textContent = "❌ 伺服器未回應";
-    statusDiv.style.color = "#f44336";
-    return false;
-  } catch (error) {
-    console.error("檢查伺服器狀態失敗:", error);
-    isServerAwake = false;
-    statusDiv.textContent = "❌ 連線失敗";
-    statusDiv.style.color = "#f44336";
-    return false;
-  }
-}
-
-// 喚醒伺服器
-async function wakeUpServer() {
-  const wakeButton = document.getElementById("wakeServer");
-  const statusDiv = document.getElementById("serverStatus");
-
-  // 設定按鈕為載入狀態
-  wakeButton.disabled = true;
-  wakeButton.textContent = "⏳ 喚醒中...";
-  statusDiv.textContent = "正在喚醒伺服器，請稍候...";
-  statusDiv.style.color = "#2196F3";
-
-  try {
-    const response = await fetch("https://tixcraft-assistant.onrender.com", {
-      method: "GET",
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.message === "Hello, World!") {
-        isServerAwake = true;
-        serverWakeTime = Date.now();
-
-        // 儲存喚醒時間到 storage
-        chrome.storage.local.set({
-          serverWakeTime: serverWakeTime,
-          isServerAwake: true,
-        });
-
-        statusDiv.textContent = "✅ 伺服器已成功喚醒！";
-        statusDiv.style.color = "#4CAF50";
-
-        // 顯示成功訊息
-        const status = document.getElementById("status");
-        status.textContent =
-          "🎉 OCR 伺服器已喚醒，現在可以正常使用驗證碼識別功能！";
-      }
-    } else {
-      throw new Error(`HTTP ${response.status}`);
-    }
-  } catch (error) {
-    console.error("喚醒伺服器失敗:", error);
-    isServerAwake = false;
-    statusDiv.textContent = "❌ 喚醒失敗，請稍後重試";
-    statusDiv.style.color = "#f44336";
-
-    const status = document.getElementById("status");
-    status.textContent = "❌ 無法連接到 OCR 伺服器，請檢查網路連線";
-    setTimeout(() => {
-      status.textContent = "";
-    }, 3000);
-  } finally {
-    // 恢復按鈕狀態
-    wakeButton.disabled = false;
-    wakeButton.textContent = "🚀 喚醒 OCR 伺服器";
-  }
-}
-
-// 檢查伺服器是否需要喚醒警告
-function checkServerWarning() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(["serverWakeTime", "isServerAwake"], (result) => {
-      const lastWakeTime = result.serverWakeTime;
-      const wasAwake = result.isServerAwake;
-
-      // 如果從未喚醒過，或者距離上次喚醒超過 30 分鐘
-      const thirtyMinutes = 30 * 60 * 1000;
-      const needsWakeup =
-        !lastWakeTime || !wasAwake || Date.now() - lastWakeTime > thirtyMinutes;
-
-      if (needsWakeup) {
-        const shouldContinue = confirm(
-          "⚠️ 注意：OCR 伺服器可能尚未喚醒！\n\n" +
-            "建議先點擊「喚醒 OCR 伺服器」按鈕，\n" +
-            "否則驗證碼識別功能可能會有延遲或失敗。\n\n" +
-            "是否仍要繼續儲存設定？\n\n" +
-            "點擊「確定」繼續儲存\n" +
-            "點擊「取消」返回喚醒伺服器"
-        );
-        resolve(shouldContinue);
-      } else {
-        resolve(true);
-      }
-    });
-  });
-}
-
 // 儲存設定
 document
   .getElementById("saveSettings")
   .addEventListener("click", async function () {
-    // 先檢查伺服器警告
-    const shouldContinue = await checkServerWarning();
+    try {
+      // 處理關鍵字
+      const keywordsText = document.getElementById("keywords").value.trim();
+      const keywords = keywordsText
+        ? keywordsText
+            .split(",")
+            .map((k) => k.trim())
+            .filter((k) => k)
+        : [];
 
-    if (!shouldContinue) {
-      // 使用者選擇不繼續，返回不儲存
-      return;
-    }
+      const newConfig = {
+        // API 設定
+        apiUrl: document.getElementById("apiUrl").value.trim(),
+        apiKey: document.getElementById("apiKey").value.trim(),
 
-    const keywordsText = document.getElementById("keywords").value.trim();
-    const keywords = keywordsText
-      ? keywordsText
-          .split(",")
-          .map((k) => k.trim())
-          .filter((k) => k)
-      : [];
+        // 自動搶票設定
+        autoRedirect: document.getElementById("autoRedirect").checked,
+        autoGrab: document.getElementById("autoGrab").checked,
+        autoSelectTicket: document.getElementById("autoSelectTicket").checked,
 
-    const settings = {
-      autoRedirect: document.getElementById("autoRedirect").checked,
-      autoGrab: document.getElementById("autoGrab").checked,
-      autoSelectTicket: document.getElementById("autoSelectTicket").checked,
-      keywords: keywords,
-      ticketCount: document.getElementById("ticketCount").value,
-      autoSubmit: document.getElementById("autoSubmit").checked,
-    };
+        // 票種和購票設定
+        keywords: keywords,
+        ticketCount: document.getElementById("ticketCount").value,
+        autoSubmit: document.getElementById("autoSubmit").checked,
+      };
 
-    chrome.storage.sync.set(settings, function () {
+      const testApiResult = document.getElementById("testApiResult");
+      if (document.getElementById("testApi").click()) {
+        const response = await fetch(`${newConfig.apiUrl}/health`, {
+          headers: {
+            "X-API-Key": newConfig.apiKey,
+          },
+        });
+
+        if (!response.ok) {
+          testApiResult.textContent =
+            "API 連線測試失敗，請檢查 API Key 是否正確";
+          testApiResult.style.color = "#f44336";
+          return;
+        }
+
+        const result = await response.json();
+        if (result.message !== "OK") {
+          testApiResult.textContent =
+            "API 連線測試失敗，請檢查 API Key 是否正確";
+          testApiResult.style.color = "#f44336";
+          return;
+        }
+
+        testApiResult.textContent = "API 連線測試成功";
+        testApiResult.style.color = "#4caf50";
+      }
+
+      // 驗證設定
+      const errors = ConfigManager.validateConfig(newConfig);
+      if (errors.length > 0) {
+        const status = document.getElementById("status");
+        status.textContent = "❌ " + errors.join(", ");
+        status.style.color = "#f44336";
+        setTimeout(() => {
+          status.textContent = "";
+          status.style.color = "#4caf50";
+        }, 3000);
+        return;
+      }
+
+      // 儲存設定
+      await ConfigManager.saveConfig(newConfig);
+
       const status = document.getElementById("status");
       status.textContent = "✅ 設定已儲存！";
 
@@ -236,7 +151,7 @@ document
         if (tabs[0] && tabs[0].url.includes("tixcraft.com")) {
           chrome.tabs.sendMessage(tabs[0].id, {
             action: "updateSettings",
-            settings: settings,
+            settings: newConfig,
           });
         }
       });
@@ -245,19 +160,26 @@ document
         status.textContent = "";
         loadStatus(); // 重新載入狀態
       }, 2000);
-    });
+    } catch (error) {
+      console.error("儲存設定失敗:", error);
+      const status = document.getElementById("status");
+      status.textContent = "❌ 儲存失敗！";
+      status.style.color = "#f44336";
+    }
   });
 
 // 停止所有自動化
-document.getElementById("stopAll").addEventListener("click", function () {
-  const settings = {
-    autoRedirect: false,
-    autoGrab: false,
-    autoSelectTicket: false,
-    autoSubmit: false,
-  };
+document.getElementById("stopAll").addEventListener("click", async function () {
+  try {
+    const stopConfig = {
+      autoRedirect: false,
+      autoGrab: false,
+      autoSelectTicket: false,
+      autoSubmit: false,
+    };
 
-  chrome.storage.sync.set(settings, function () {
+    await ConfigManager.saveConfig(stopConfig);
+
     // 更新 UI
     document.getElementById("autoRedirect").checked = false;
     document.getElementById("autoGrab").checked = false;
@@ -272,7 +194,7 @@ document.getElementById("stopAll").addEventListener("click", function () {
       if (tabs[0] && tabs[0].url.includes("tixcraft.com")) {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: "updateSettings",
-          settings: settings,
+          settings: stopConfig,
         });
       }
     });
@@ -281,38 +203,16 @@ document.getElementById("stopAll").addEventListener("click", function () {
       status.textContent = "";
       loadStatus();
     }, 2000);
-  });
+  } catch (error) {
+    console.error("停止自動化失敗:", error);
+  }
 });
-
-// 喚醒伺服器按鈕事件
-document.getElementById("wakeServer").addEventListener("click", wakeUpServer);
 
 // 頁面載入時執行
 document.addEventListener("DOMContentLoaded", function () {
   loadSettings();
   loadStatus();
 
-  // 初始檢查伺服器狀態
-  setTimeout(checkServerStatus, 500);
-
-  // 載入伺服器狀態記錄
-  chrome.storage.local.get(["serverWakeTime", "isServerAwake"], (result) => {
-    if (result.serverWakeTime && result.isServerAwake) {
-      serverWakeTime = result.serverWakeTime;
-      isServerAwake = result.isServerAwake;
-
-      // 檢查是否超過15分鐘
-      const fifteenMinutes = 15 * 60 * 1000;
-      if (Date.now() - serverWakeTime > fifteenMinutes) {
-        isServerAwake = false;
-        chrome.storage.local.set({ isServerAwake: false });
-      }
-    }
-  });
-
   // 每3秒更新一次狀態
   setInterval(loadStatus, 3000);
-
-  // 每分鐘檢查一次伺服器狀態
-  setInterval(checkServerStatus, 60000);
 });

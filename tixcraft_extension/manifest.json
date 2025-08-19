@@ -25,7 +25,7 @@
         "https://tixcraft.com/ticket/area/*",
         "https://tixcraft.com/ticket/ticket/*"
       ],
-      "js": ["content.js"],
+      "js": ["config.js", "content.js"],
       "type": "module"
     }
   ],

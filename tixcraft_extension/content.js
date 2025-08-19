@@ -30,20 +30,39 @@ async function getCode(imageUrl) {
       throw new Error("無法轉換圖片為 base64");
     }
 
-    const response = await fetch(
-      "https://tixcraft-assistant.onrender.com/analyze-image",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          image: base64Image,
-        }),
-      }
-    );
+    // 從 ConfigManager 取得 API 設定
+    const config = await ConfigManager.getConfig();
+
+    if (!config.apiUrl) {
+      throw new Error("請先在擴充功能設定中輸入 API 伺服器網址");
+    }
+
+    // 建構完整的 API URL
+    const apiUrl = config.apiUrl.endsWith("/")
+      ? config.apiUrl + "analyze-image"
+      : config.apiUrl + "/analyze-image";
+
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    // 如果有 API Key，加入 header
+    if (config.apiKey) {
+      headers["X-API-Key"] = config.apiKey;
+    }
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        image: base64Image,
+      }),
+    });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("API Key 無效，請檢查擴充功能設定");
+      }
       console.log(response);
       throw new Error("後端服務錯誤");
     }
@@ -376,30 +395,14 @@ async function main() {
 
 // 載入設定
 async function loadSettings() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(
-      [
-        "autoRedirect",
-        "autoGrab",
-        "autoSelectTicket",
-        "keywords",
-        "ticketCount",
-        "autoSubmit",
-      ],
-      (result) => {
-        settings = {
-          autoRedirect: result.autoRedirect || false,
-          autoGrab: result.autoGrab || false,
-          autoSelectTicket: result.autoSelectTicket || false,
-          keywords: result.keywords || [],
-          ticketCount: result.ticketCount || "1",
-          autoSubmit: result.autoSubmit || false,
-        };
-        console.log("⚙️ 已載入設定:", settings);
-        resolve();
-      }
-    );
-  });
+  try {
+    settings = await ConfigManager.getConfig();
+    console.log("⚙️ 已載入設定:", settings);
+  } catch (error) {
+    console.error("載入設定失敗:", error);
+    // 使用預設設定
+    settings = ConfigManager.defaults;
+  }
 }
 
 // 監聽來自 popup 的訊息

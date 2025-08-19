@@ -26,7 +26,9 @@
         margin-bottom: 5px;
       }
       input[type="text"],
-      input[type="number"] {
+      input[type="number"],
+      input[type="url"],
+      input[type="password"] {
         width: 100%;
         padding: 5px;
         margin: 5px 0;
@@ -68,21 +70,32 @@
     <div class="container">
       <h3>拓元搶票助手</h3>
 
-      <!-- 伺服器狀態 -->
+      <!-- API 設定 -->
       <div class="setting-group">
-        <h4>🌐 OCR 伺服器</h4>
+        <h4>🔧 API 設定</h4>
         <div class="setting-item">
-          <button
-            id="wakeServer"
-            style="background-color: #2196f3; width: 100%"
-          >
-            🚀 喚醒 OCR 伺服器
+          <label for="apiUrl">API 伺服器網址：</label>
+          <input
+            type="url"
+            id="apiUrl"
+            placeholder="https://your-api-server.com"
+          />
+          <small>OCR 服務的 API 端點</small>
+        </div>
+        <div class="setting-item">
+          <label for="apiKey">API Key：</label>
+          <input type="password" id="apiKey" placeholder="輸入你的 API Key" />
+          <small>用於 OCR 服務認證</small>
+        </div>
+        <div class="setting-item">
+          <button id="testApi" style="background-color: #2196f3; width: 100%">
+            🧪 測試 API 連線
           </button>
           <div
-            id="serverStatus"
+            id="apiTestResult"
             style="margin-top: 5px; font-size: 12px; text-align: center"
           >
-            伺服器狀態：未檢查
+            點擊按鈕測試 API 連線狀態
           </div>
         </div>
       </div>
@@ -150,6 +163,7 @@
       <div id="status" class="status"></div>
     </div>
 
+    <script src="config.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
