@@ -17,9 +17,6 @@ x_api_key = os.getenv('X-API-KEY')
 
 @app.route('/')
 def index():
-    client_api_key = request.headers.get('X-API-Key')
-    if client_api_key != x_api_key:
-        return jsonify({'message': 'Unauthorized'}), 401
     return jsonify({'message': 'Hello, World!'})
 
 @app.route('/analyze-image', methods=['POST'])
