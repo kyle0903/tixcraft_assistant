@@ -2,7 +2,6 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-ADD .env /app/.env
 ADD requirements.txt /app/requirements.txt
 ADD app.py /app/app.py
 
