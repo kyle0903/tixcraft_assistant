@@ -13,6 +13,7 @@ app = Flask(__name__)
 CORS(app)  # 允許跨域請求
 # 初始化 OpenAI 客戶端
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+x_api_key = os.getenv('X_API_KEY')
 
 @app.route('/')
 def index():
@@ -21,6 +22,9 @@ def index():
 
 @app.route('/login', methods=['GET'])
 def login():
+    client_api_key = request.headers.get('X_API_KEY')
+    if client_api_key != x_api_key:
+        return jsonify({'message': 'Unauthorized'}), 401
     return jsonify({'message': 'login!'})
 
 # 測試圖片轉換base64
