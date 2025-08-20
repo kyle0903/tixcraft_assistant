@@ -6,7 +6,7 @@
   "permissions": ["storage", "activeTab", "tabs", "notifications"],
   "host_permissions": [
     "https://tixcraft.com/*",
-    "https://tixcraft-assistant.onrender.com/*"
+    "https://tixcraft-api-820504025283.asia-east1.run.app/*"
   ],
   "action": {
     "default_popup": "popup.html"

@@ -271,7 +271,14 @@ class TicketAreaHandler {
 
     ticketElements.forEach((element) => {
       const text = element.textContent.toLowerCase();
-      const excludeKeywords = ["wheelchair", "身障", "愛心", "陪同"];
+      const excludeKeywords = [
+        "wheelchair",
+        "身障",
+        "愛心",
+        "陪同",
+        "登出",
+        "logout",
+      ];
 
       // 排除特殊票種
       if (excludeKeywords.some((keyword) => text.includes(keyword))) {
@@ -312,7 +319,7 @@ class TicketAreaHandler {
       selectedTicket.element.click();
       return true;
     } else {
-      // 如果沒有關鍵字限制，選擇第一個可用票種
+      // 如果找不到關鍵字，選擇第一個可用票種
       if (settings.keywords && settings.keywords.length > 0) {
         this.showNotification(
           "🎫 找不到符合條件的票種，正在選擇第一個可用票種..."

@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // 設定預設值 - 使用 ConfigManager 的預設值
   // 注意：background script 無法直接使用 ConfigManager，所以這裡手動設定
   chrome.storage.sync.set({
-    apiUrl: "https://tixcraft-assistant.onrender.com",
+    apiUrl: "https://tixcraft-api-820504025283.asia-east1.run.app",
     apiKey: "",
     timeout: 30000,
     retryCount: 3,
