@@ -12,11 +12,11 @@ chrome.runtime.onInstalled.addListener(() => {
     timeout: 30000,
     retryCount: 3,
     autoRedirect: false,
-    autoGrab: true,
-    autoSelectTicket: true,
+    autoGrab: false,
+    autoSelectTicket: false,
     keywords: [],
     ticketCount: "1",
-    autoSubmit: true,
+    autoSubmit: false,
   });
 });
 

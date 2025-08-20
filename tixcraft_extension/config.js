@@ -8,13 +8,18 @@ class ConfigManager {
     timeout: 30000,
     retryCount: 3,
 
+    // API 測試狀態
+    apiTested: false,
+    apiTestSuccess: false,
+    lastApiTestTime: null,
+
     // 搶票功能設定
     autoRedirect: false,
-    autoGrab: true,
-    autoSelectTicket: true,
+    autoGrab: false,
+    autoSelectTicket: false,
     keywords: [],
     ticketCount: "1",
-    autoSubmit: true,
+    autoSubmit: false,
   };
 
   // 取得設定
@@ -94,6 +99,31 @@ class ConfigManager {
     }
 
     return errors;
+  }
+
+  // 檢查 API 是否已測試成功
+  static async isApiReady() {
+    const config = await this.getConfig();
+    return config.apiTested && config.apiTestSuccess;
+  }
+
+  // 設定 API 測試結果
+  static async setApiTestResult(success) {
+    const now = new Date().toISOString();
+    await this.saveConfig({
+      apiTested: true,
+      apiTestSuccess: success,
+      lastApiTestTime: now,
+    });
+  }
+
+  // 重置 API 測試狀態（當 API 設定改變時）
+  static async resetApiTestStatus() {
+    await this.saveConfig({
+      apiTested: false,
+      apiTestSuccess: false,
+      lastApiTestTime: null,
+    });
   }
 
   // 檢查 URL 格式

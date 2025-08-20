@@ -33,6 +33,20 @@ async function loadSettings() {
     // 購票設定
     document.getElementById("ticketCount").value = config.ticketCount || "1";
     document.getElementById("autoSubmit").checked = config.autoSubmit || false;
+
+    // 載入 API 測試狀態
+    apiTestStatus = {
+      tested: config.apiTested || false,
+      success: config.apiTestSuccess || false,
+      apiUrl: config.apiUrl || "",
+      apiKey: config.apiKey || "",
+    };
+
+    // 更新 API 測試結果顯示
+    updateApiTestDisplay();
+
+    // 更新按鈕狀態
+    updateSaveButtonState();
   } catch (error) {
     console.error("載入設定失敗:", error);
   }
@@ -224,6 +238,12 @@ document.getElementById("testApi").addEventListener("click", async function () {
         apiUrl: apiUrl,
         apiKey: apiKey,
       };
+
+      // 保存測試成功狀態到 ConfigManager
+      await ConfigManager.setApiTestResult(true);
+
+      // 更新按鈕狀態
+      updateSaveButtonState();
     } else {
       testApiResult.textContent = "❌ API 回應格式不正確";
       testApiResult.style.color = "#f44336";
@@ -235,6 +255,12 @@ document.getElementById("testApi").addEventListener("click", async function () {
         apiUrl: apiUrl,
         apiKey: apiKey,
       };
+
+      // 保存測試失敗狀態到 ConfigManager
+      await ConfigManager.setApiTestResult(false);
+
+      // 更新按鈕狀態
+      updateSaveButtonState();
     }
   } catch (error) {
     console.error("API 測試失敗:", error);
@@ -248,6 +274,12 @@ document.getElementById("testApi").addEventListener("click", async function () {
       apiUrl: apiUrl,
       apiKey: apiKey,
     };
+
+    // 保存測試失敗狀態到 ConfigManager
+    await ConfigManager.setApiTestResult(false);
+
+    // 更新按鈕狀態
+    updateSaveButtonState();
   } finally {
     // 恢復按鈕狀態
     testButton.disabled = false;
@@ -296,7 +328,7 @@ document.getElementById("stopAll").addEventListener("click", async function () {
 });
 
 // 重置 API 測試狀態
-function resetApiTestStatus() {
+async function resetApiTestStatus() {
   apiTestStatus = {
     tested: false,
     success: false,
@@ -304,9 +336,51 @@ function resetApiTestStatus() {
     apiKey: "",
   };
 
+  // 重置 ConfigManager 中的測試狀態
+  await ConfigManager.resetApiTestStatus();
+
   const testApiResult = document.getElementById("apiTestResult");
   testApiResult.textContent = "API 設定已變更，請重新測試連線";
   testApiResult.style.color = "#ff9800";
+
+  // 更新按鈕狀態
+  updateSaveButtonState();
+}
+
+// 更新 API 測試結果顯示
+function updateApiTestDisplay() {
+  const testApiResult = document.getElementById("apiTestResult");
+
+  if (apiTestStatus.tested) {
+    if (apiTestStatus.success) {
+      testApiResult.textContent = "✅ API 連線測試成功";
+      testApiResult.style.color = "#4caf50";
+    } else {
+      testApiResult.textContent = "❌ API 連線測試失敗";
+      testApiResult.style.color = "#f44336";
+    }
+  } else {
+    testApiResult.textContent = "請先測試 API 連線";
+    testApiResult.style.color = "#ff9800";
+  }
+}
+
+// 更新保存按鈕狀態
+function updateSaveButtonState() {
+  const saveButton = document.getElementById("saveSettings");
+  const apiUrl = document.getElementById("apiUrl").value.trim();
+  const apiKey = document.getElementById("apiKey").value.trim();
+
+  // 如果有 API 設定但沒有測試成功，禁用保存按鈕
+  if (apiUrl && apiKey && (!apiTestStatus.tested || !apiTestStatus.success)) {
+    saveButton.disabled = true;
+    saveButton.textContent = "💾 儲存設定（請先測試 API）";
+    saveButton.style.opacity = "0.6";
+  } else {
+    saveButton.disabled = false;
+    saveButton.textContent = "💾 儲存設定";
+    saveButton.style.opacity = "1";
+  }
 }
 
 // 頁面載入時執行
@@ -315,12 +389,14 @@ document.addEventListener("DOMContentLoaded", function () {
   loadStatus();
 
   // 監聽 API 設定變更
-  document
-    .getElementById("apiUrl")
-    .addEventListener("input", resetApiTestStatus);
-  document
-    .getElementById("apiKey")
-    .addEventListener("input", resetApiTestStatus);
+  document.getElementById("apiUrl").addEventListener("input", () => {
+    resetApiTestStatus();
+    updateSaveButtonState();
+  });
+  document.getElementById("apiKey").addEventListener("input", () => {
+    resetApiTestStatus();
+    updateSaveButtonState();
+  });
 
   // 每3秒更新一次狀態
   setInterval(loadStatus, 3000);

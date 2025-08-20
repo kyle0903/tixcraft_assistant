@@ -379,6 +379,24 @@ async function main() {
   const pageType = detectPageType();
   console.log("📍 目前頁面類型:", pageType);
 
+  // 檢查是否需要自動功能
+  const needsAutoFeatures = [
+    "activity_game",
+    "ticket_area",
+    "ticket_purchase",
+  ].includes(pageType);
+
+  if (needsAutoFeatures) {
+    // 檢查 API 是否已測試成功
+    const isApiReady = await ConfigManager.isApiReady();
+
+    if (!isApiReady) {
+      console.warn("⚠️ API 尚未測試成功，自動功能已停用");
+      showApiWarning(pageType);
+      return;
+    }
+  }
+
   switch (pageType) {
     case "activity_game":
       const activityHandler = new ActivityDetailHandler();
@@ -398,6 +416,52 @@ async function main() {
     default:
       console.log("🔍 未知頁面類型，等待用戶操作");
   }
+}
+
+// 顯示 API 警告
+function showApiWarning(pageType) {
+  const pageNames = {
+    activity_game: "自動搶票",
+    ticket_area: "自動選票",
+    ticket_purchase: "自動填寫驗證碼",
+  };
+
+  const featureName = pageNames[pageType] || "自動功能";
+
+  const warning = document.createElement("div");
+  warning.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ff6b6b;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    max-width: 300px;
+    font-size: 14px;
+    line-height: 1.5;
+  `;
+
+  warning.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 10px;">⚠️ ${featureName}功能已停用</div>
+    <div style="margin-bottom: 15px;">請先在擴充功能中測試 API 連線</div>
+    <div style="font-size: 12px; opacity: 0.9;">
+      1. 點擊瀏覽器右上角的擴充功能圖示<br>
+      2. 輸入 API Key<br>
+      3. 點擊「🔌 測試 API 連線」按鈕
+    </div>
+  `;
+
+  document.body.appendChild(warning);
+
+  // 10秒後自動消失
+  setTimeout(() => {
+    if (warning.parentNode) {
+      warning.parentNode.removeChild(warning);
+    }
+  }, 10000);
 }
 
 // 載入設定
