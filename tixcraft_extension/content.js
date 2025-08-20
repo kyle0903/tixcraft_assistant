@@ -364,7 +364,7 @@ class TicketAreaHandler {
   }
 }
 
-// === 購票頁面處理（原有的驗證碼功能）===
+// === 購票頁面處理 ===
 class TicketPurchaseHandler {
   async handle() {
     await checkAndFillVerifyCode();

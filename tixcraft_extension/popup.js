@@ -207,7 +207,7 @@ document.getElementById("testApi").addEventListener("click", async function () {
 
   // 顯示測試中狀態
   testButton.disabled = true;
-  testButton.textContent = "🔄 測試中...";
+  testButton.textContent = " 測試中...";
   testApiResult.textContent = "正在測試 API 連線...";
   testApiResult.style.color = "#2196f3";
 
