@@ -122,27 +122,6 @@ document
         autoSubmit: document.getElementById("autoSubmit").checked,
       };
 
-      // 檢查 API 設定是否需要測試
-      const apiChanged =
-        apiTestStatus.apiUrl !== newConfig.apiUrl ||
-        apiTestStatus.apiKey !== newConfig.apiKey;
-
-      if (
-        newConfig.apiUrl &&
-        newConfig.apiKey &&
-        (!apiTestStatus.tested || !apiTestStatus.success || apiChanged)
-      ) {
-        const confirmSave = confirm(
-          "⚠️ 警告：請先確定有測試過 API 可以連線，否則 API KEY錯誤會造成無法自動辨別驗證碼。\n\n" +
-            "建議先點擊「測試 API 連線」按鈕確認連線成功後再儲存設定。\n\n" +
-            "是否仍要繼續儲存？"
-        );
-
-        if (!confirmSave) {
-          return; // 使用者選擇不儲存
-        }
-      }
-
       // 驗證設定
       const errors = ConfigManager.validateConfig(newConfig);
       if (errors.length > 0) {
