@@ -3,7 +3,6 @@
 // 擴充功能安裝時執行
 chrome.runtime.onInstalled.addListener(() => {
   console.log("拓元搶票助手已安裝");
-
   // 設定預設值 - 使用 ConfigManager 的預設值
   // 注意：background script 無法直接使用 ConfigManager，所以這裡手動設定
   chrome.storage.sync.set({

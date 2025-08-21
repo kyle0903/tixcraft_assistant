@@ -75,12 +75,6 @@ async function getCode(imageUrl) {
   }
 }
 
-// 判斷是否為重新整理
-function isPageRefresh() {
-  const navigation = window.performance.getEntriesByType("navigation")[0];
-  return navigation.type === "reload";
-}
-
 // 監聽頁面變化
 async function checkAndFillVerifyCode() {
   try {
@@ -160,183 +154,226 @@ function detectPageType() {
   return "unknown";
 }
 
-// === 活動詳情頁面處理 ===
-class ActivityDetailHandler {
+// === 頁面處理器 ===
+class PageHandler {
   constructor() {
     this.console = console;
   }
 
-  // 尋找購買按鈕
-  findBuyButton() {
-    // 尋找具有特定 class 的按鈕
-    const buyButton = document.querySelectorAll(
-      ".btn.btn-primary.text-bold.m-0"
-    );
-    let buyButtonUrl = null;
-    for (const button of buyButton) {
-      if (button.disabled) {
-        continue;
+  // 統一處理所有頁面類型
+  async handlePage(pageType) {
+    try {
+      this.console.log(`分析${pageType}頁面...`);
+
+      // 獲取頁面內容
+      const htmlContent = document.documentElement.outerHTML;
+      const url = location.href;
+
+      // 呼叫後端API進行智能分析
+      const instruction = await this.getPageInstruction(
+        pageType,
+        htmlContent,
+        url
+      );
+
+      if (instruction) {
+        await this.executeInstruction(instruction);
       }
-      buyButtonUrl = button.dataset.href;
-    }
-    return buyButtonUrl;
-  }
-
-  // 檢查是否開賣
-  async checkAndClickBuy() {
-    if (!settings.autoGrab) return;
-
-    const buyButton = this.findBuyButton();
-    if (buyButton) {
-      this.showNotification("找到購買按鈕，正在進入購票頁面...");
-      window.location.href = buyButton;
-      return true;
-    }
-    return false;
-  }
-
-  // 檢查是否顯示倒數計時
-  checkCountdownTimer() {
-    const countdownTimer = document.querySelectorAll(".gridc.fcTxt");
-    if (countdownTimer[0].innerHTML.includes("text-center")) {
-      this.console.log(countdownTimer[0].innerText.split("\n")[1].trim());
-      return true;
-    }
-    return false;
-  }
-
-  // 簡單的搶票邏輯：檢查並點擊或刷新
-  async monitorBuyButton() {
-    if (!settings.autoGrab) return;
-
-    this.console.log("🔄 檢查購買按鈕狀態...");
-
-    // 先檢查是否有購買按鈕
-    const buyButtonFound = await this.checkAndClickBuy();
-    if (buyButtonFound) {
-      this.console.log("✅ 找到購買按鈕，已點擊！");
-      return;
-    }
-
-    // 如果沒有購買按鈕，檢查是否有倒數計時
-    const hasCountdown = this.checkCountdownTimer();
-
-    if (hasCountdown) {
-      this.showNotification("檢測到倒數計時，刷新頁面中...");
-
-      // 1秒後刷新頁面
-      setTimeout(() => {
-        location.reload();
-      }, 1000);
-    } else {
-      this.showNotification("未檢測到倒數計時，手動刷新或檢查頁面狀態");
+    } catch (error) {
+      console.error("頁面處理失敗:", error);
+      this.showNotification("❌ 分析頁面失敗，請檢查網路連線");
     }
   }
 
-  showNotification(message) {
-    // 在頁面上顯示通知
-    const notification = document.createElement("div");
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #4CAF50;
-      color: white;
-      padding: 15px;
-      border-radius: 5px;
-      z-index: 9999;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
+  // 呼叫後端API獲取指令
+  async getPageInstruction(pageType, htmlContent, url) {
+    const config = await ConfigManager.getConfig();
 
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 3000);
-  }
-}
+    if (!config.apiUrl || !config.apiKey) {
+      throw new Error("API 設定不完整");
+    }
 
-// === 場次選擇頁面處理 ===
-class TicketAreaHandler {
-  constructor() {
-    this.console = console;
-  }
+    const apiUrl = config.apiUrl.endsWith("/")
+      ? config.apiUrl + "analyze-page"
+      : config.apiUrl + "/analyze-page";
 
-  // 根據關鍵字尋找票種
-  findTicketsByKeyword() {
-    const tickets = [];
-    const ticketElements = document.querySelectorAll("li a[id]");
-
-    ticketElements.forEach((element) => {
-      const text = element.textContent.toLowerCase();
-      const excludeKeywords = [
-        "wheelchair",
-        "身障",
-        "愛心",
-        "陪同",
-        "登出",
-        "logout",
-      ];
-
-      // 排除特殊票種
-      if (excludeKeywords.some((keyword) => text.includes(keyword))) {
-        return;
-      }
-
-      // 檢查是否符合關鍵字
-      let matches = true;
-      if (settings.keywords && settings.keywords.length > 0) {
-        matches = settings.keywords.some((keyword) =>
-          text.includes(keyword.toLowerCase())
-        );
-      }
-
-      if (matches) {
-        tickets.push({
-          element: element,
-          text: element.textContent.trim(),
-          id: element.id,
-        });
-      }
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": config.apiKey,
+      },
+      body: JSON.stringify({
+        pageType: pageType,
+        htmlContent: htmlContent,
+        url: url,
+        settings: settings,
+      }),
     });
 
-    return tickets;
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("API Key 無效");
+      }
+      throw new Error(`後端服務錯誤: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
-  // 自動選擇票種
-  async autoSelectTicket() {
-    if (!settings.autoSelectTicket) return;
+  // 執行後端返回的指令
+  async executeInstruction(instruction) {
+    const action = instruction.action;
+    const message = instruction.message;
 
-    const tickets = this.findTicketsByKeyword();
+    if (message) {
+      this.showNotification(message);
+    }
 
-    if (tickets.length > 0) {
-      const selectedTicket = tickets[0]; // 選擇第一個符合的票種
-      this.console.log("🎫 自動選擇票種:" + "\n" + selectedTicket.text);
-
-      // 點擊票種
-      selectedTicket.element.click();
-      return true;
-    } else {
-      // 如果找不到關鍵字，選擇第一個可用票種
-      if (settings.keywords && settings.keywords.length > 0) {
-        this.showNotification(
-          "🎫 找不到符合條件的票種，正在選擇第一個可用票種..."
-        );
-        const allTickets = document.querySelectorAll("li a[id]");
-        if (allTickets.length > 0) {
-          this.console.log(
-            "🎫 選擇第一個可用票種：" + allTickets[0].textContent
-          );
-          allTickets[0].click();
-          return true;
+    switch (action) {
+      case "redirect":
+        if (instruction.url) {
+          this.console.log("🔄 執行跳轉:", instruction.url);
+          window.location.href = instruction.url;
         }
+        break;
+
+      case "refresh":
+        const delay = instruction.delay || 1000;
+        this.console.log(`🔄 ${delay}ms後刷新頁面`);
+        setTimeout(() => {
+          location.reload();
+        }, delay);
+        break;
+
+      case "click":
+        if (instruction.selector) {
+          this.console.log("🖱️ 執行點擊:", instruction.selector);
+          const element = this.safeQuerySelector(instruction.selector);
+          if (element) {
+            element.click();
+          } else {
+            this.showNotification("❌ 找不到指定元素");
+          }
+        }
+        break;
+
+      case "execute":
+        if (instruction.actions) {
+          this.console.log("🔧 執行多個動作:", instruction.actions.length);
+          for (const subAction of instruction.actions) {
+            await this.executeAction(subAction);
+          }
+        }
+        break;
+
+      case "wait":
+        this.console.log("⏳ 等待中:", message);
+        break;
+
+      default:
+        this.console.log("❓ 未知指令:", action);
+    }
+  }
+
+  // 安全的 querySelector，處理以數字開頭的 ID
+  safeQuerySelector(selector) {
+    try {
+      // 如果是以 # 開頭的 ID 選擇器且以數字開頭，使用屬性選擇器
+      if (selector.startsWith("#") && /^#\d/.test(selector)) {
+        const id = selector.slice(1); // 移除 #
+        return document.querySelector(`[id="${id}"]`);
+      }
+
+      // 其他情況使用正常的 querySelector
+      return document.querySelector(selector);
+    } catch (error) {
+      console.error("無效的選擇器:", selector, error);
+      return null;
+    }
+  }
+
+  // 執行單個動作
+  async executeAction(action) {
+    switch (action.action) {
+      case "setValue":
+        const selectElement = this.safeQuerySelector(action.selector);
+        if (selectElement) {
+          selectElement.value = action.value;
+          this.console.log(`✅ 設定值 ${action.selector} = ${action.value}`);
+        }
+        break;
+
+      case "check":
+        const checkboxElement = this.safeQuerySelector(action.selector);
+        if (checkboxElement) {
+          checkboxElement.checked = true;
+          this.console.log(`✅ 勾選 ${action.selector}`);
+        }
+        break;
+
+      case "fillCaptcha":
+        await this.fillCaptcha(action.imageUrl, action.inputSelector);
+        break;
+
+      case "conditionalSubmit":
+        await this.conditionalSubmit(action.selector, action.conditions);
+        break;
+    }
+  }
+
+  // 填寫驗證碼
+  async fillCaptcha(imageUrl, inputSelector) {
+    try {
+      this.console.log("🔍 分析驗證碼...");
+      const code = await getCode(imageUrl);
+      if (code) {
+        const input = this.safeQuerySelector(inputSelector);
+        if (input) {
+          input.value = code;
+          this.console.log("✅ 驗證碼已填入:", code);
+        }
+      }
+    } catch (error) {
+      console.error("驗證碼分析失敗:", error);
+    }
+  }
+
+  // 條件性提交
+  async conditionalSubmit(selector, conditions) {
+    let canSubmit = true;
+
+    for (const condition of conditions) {
+      switch (condition) {
+        case "captchaFilled":
+          const captchaInput = this.safeQuerySelector("#TicketForm_verifyCode");
+          if (!captchaInput || !captchaInput.value.trim()) {
+            canSubmit = false;
+            this.console.log("❌ 驗證碼未填寫");
+          }
+          break;
+
+        case "agreementChecked":
+          const agreementCheckbox = this.safeQuerySelector(
+            'input[type="checkbox"]'
+          );
+          if (!agreementCheckbox || !agreementCheckbox.checked) {
+            canSubmit = false;
+            this.console.log("❌ 同意條款未勾選");
+          }
+          break;
       }
     }
 
-    this.showNotification("❌ 很可惜，已經沒有票了，可以再重新整理試試看😭");
-    return false;
+    if (canSubmit) {
+      const submitButton = this.safeQuerySelector(selector);
+      if (submitButton) {
+        this.console.log("🚀 執行提交");
+        submitButton.click();
+      }
+    } else {
+      this.console.log("⏳ 提交條件不滿足，等待中...");
+    }
   }
 
   showNotification(message) {
@@ -360,13 +397,14 @@ class TicketAreaHandler {
       if (notification.parentNode) {
         notification.parentNode.removeChild(notification);
       }
-    }, 3000);
+    }, 2000);
   }
 }
 
 // === 購票頁面處理 ===
 class TicketPurchaseHandler {
   async handle() {
+    // 保留驗證碼功能
     await checkAndFillVerifyCode();
   }
 }
@@ -395,26 +433,12 @@ async function main() {
       showApiWarning(pageType);
       return;
     }
-  }
 
-  switch (pageType) {
-    case "activity_game":
-      const activityHandler = new ActivityDetailHandler();
-      await activityHandler.monitorBuyButton();
-      break;
-
-    case "ticket_area":
-      const areaHandler = new TicketAreaHandler();
-      await areaHandler.autoSelectTicket();
-      break;
-
-    case "ticket_purchase":
-      const purchaseHandler = new TicketPurchaseHandler();
-      await purchaseHandler.handle();
-      break;
-
-    default:
-      console.log("🔍 未知頁面類型，等待用戶操作");
+    // 統一處理所有頁面
+    const pageHandler = new PageHandler();
+    await pageHandler.handlePage(pageType);
+  } else {
+    console.log("🔍 未知頁面類型，等待用戶操作");
   }
 }
 
