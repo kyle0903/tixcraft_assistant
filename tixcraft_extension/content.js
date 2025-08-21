@@ -30,14 +30,12 @@ async function getCode(imageUrl) {
       throw new Error("無法轉換圖片為 base64");
     }
 
-    // 從 ConfigManager 取得 API 設定
     const config = await ConfigManager.getConfig();
 
     if (!config.apiUrl) {
       throw new Error("請先在擴充功能設定中輸入 API 伺服器網址");
     }
 
-    // 建構完整的 API URL
     const apiUrl = config.apiUrl.endsWith("/")
       ? config.apiUrl + "analyze-image"
       : config.apiUrl + "/analyze-image";
@@ -46,7 +44,6 @@ async function getCode(imageUrl) {
       "Content-Type": "application/json",
     };
 
-    // 如果有 API Key，加入 header
     if (config.apiKey) {
       headers["X-API-Key"] = config.apiKey;
     }
@@ -78,10 +75,8 @@ async function getCode(imageUrl) {
 // 監聽頁面變化
 async function checkAndFillVerifyCode() {
   try {
-    // 使用更精確的選擇器
     const verifyCodeInput = document.getElementById("TicketForm_verifyCode");
 
-    // 尋找所有 select 元素
     const selects = document.querySelectorAll("select");
 
     const agreeInput = document.querySelector('input[type="checkbox"]');
@@ -93,7 +88,6 @@ async function checkAndFillVerifyCode() {
     const captchaImageUrl = captchaImage.src;
 
     for (const select of selects) {
-      // 檢查這個 select 是否有 1,2,3,4 的選項
       const hasValidOptions = Array.from(select.options).some((option) =>
         ["1", "2", "3", "4"].includes(option.value)
       );
@@ -169,7 +163,7 @@ class PageHandler {
       const htmlContent = document.documentElement.outerHTML;
       const url = location.href;
 
-      // 呼叫後端API進行智能分析
+      // 呼叫後端API進行分析
       const instruction = await this.getPageInstruction(
         pageType,
         htmlContent,
@@ -279,7 +273,6 @@ class PageHandler {
   // 安全的 querySelector，處理以數字開頭的 ID
   safeQuerySelector(selector) {
     try {
-      // 如果是以 # 開頭的 ID 選擇器且以數字開頭，使用屬性選擇器
       if (selector.startsWith("#") && /^#\d/.test(selector)) {
         const id = selector.slice(1); // 移除 #
         return document.querySelector(`[id="${id}"]`);
@@ -339,7 +332,6 @@ class PageHandler {
     }
   }
 
-  // 條件性提交
   async conditionalSubmit(selector, conditions) {
     let canSubmit = true;
 
@@ -377,7 +369,6 @@ class PageHandler {
   }
 
   showNotification(message) {
-    // 在頁面上顯示通知
     const notification = document.createElement("div");
     notification.style.cssText = `
       position: fixed;
@@ -404,14 +395,12 @@ class PageHandler {
 // === 購票頁面處理 ===
 class TicketPurchaseHandler {
   async handle() {
-    // 保留驗證碼功能
     await checkAndFillVerifyCode();
   }
 }
 
 // === 主要執行邏輯 ===
 async function main() {
-  // 載入設定
   await loadSettings();
 
   const pageType = detectPageType();
@@ -442,7 +431,6 @@ async function main() {
   }
 }
 
-// 顯示 API 警告
 function showApiWarning(pageType) {
   const pageNames = {
     activity_game: "自動搶票",
@@ -488,7 +476,6 @@ function showApiWarning(pageType) {
   }, 10000);
 }
 
-// 載入設定
 async function loadSettings() {
   try {
     settings = await ConfigManager.getConfig();

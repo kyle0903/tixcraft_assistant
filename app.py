@@ -213,7 +213,7 @@ def analyze_ticket_area(html_content, url, settings):
     # 如果沒有符合條件的票種，選擇第一個可用的
     if user_keywords:
         for ticket in ticket_links:
-            if ticket.get('id') and ticket.get('id') != 'logoLink':
+            if ticket.get('id') and ticket.get('id') != 'logoLink' and not any(keyword in ticket.get_text().lower() for keyword in exclude_keywords):
                 return jsonify({
                     'action': 'click',
                     'selector': f"#{ticket.get('id')}",

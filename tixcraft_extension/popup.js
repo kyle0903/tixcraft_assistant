@@ -141,7 +141,7 @@ document
       const status = document.getElementById("status");
       status.textContent = "✅ 設定已儲存！";
 
-      // 通知內容腳本更新設定
+      // 更新設定
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (tabs[0] && tabs[0].url.includes("tixcraft.com")) {
           chrome.tabs.sendMessage(tabs[0].id, {

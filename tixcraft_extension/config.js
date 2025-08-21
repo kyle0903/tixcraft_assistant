@@ -49,7 +49,6 @@ class ConfigManager {
   // 儲存設定
   static async saveConfig(newConfig) {
     return new Promise((resolve) => {
-      // 處理 keywords 格式 - 如果是陣列，保持陣列格式
       const configToSave = { ...newConfig };
 
       chrome.storage.sync.set(configToSave, () => {
