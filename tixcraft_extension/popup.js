@@ -23,6 +23,7 @@ async function loadSettings() {
     document.getElementById("autoGrab").checked = config.autoGrab || false;
     document.getElementById("autoSelectTicket").checked =
       config.autoSelectTicket || false;
+    document.getElementById("autoSubmit").checked = config.autoSubmit || false;
 
     // 票種篩選
     const keywordsValue = Array.isArray(config.keywords)
@@ -32,7 +33,6 @@ async function loadSettings() {
 
     // 購票設定
     document.getElementById("ticketCount").value = config.ticketCount || "1";
-    document.getElementById("autoSubmit").checked = config.autoSubmit || false;
 
     // 載入 API 測試狀態
     apiTestStatus = {
@@ -41,6 +41,11 @@ async function loadSettings() {
       apiUrl: config.apiUrl || "",
       apiKey: config.apiKey || "",
     };
+
+    if (apiTestStatus.apiKey === "") {
+      apiTestStatus.tested = false;
+      apiTestStatus.success = false;
+    }
 
     // 更新 API 測試結果顯示
     updateApiTestDisplay();
@@ -115,11 +120,11 @@ document
         autoRedirect: document.getElementById("autoRedirect").checked,
         autoGrab: document.getElementById("autoGrab").checked,
         autoSelectTicket: document.getElementById("autoSelectTicket").checked,
+        autoSubmit: document.getElementById("autoSubmit").checked,
 
         // 票種和購票設定
         keywords: keywords,
         ticketCount: document.getElementById("ticketCount").value,
-        autoSubmit: document.getElementById("autoSubmit").checked,
       };
 
       // 驗證設定

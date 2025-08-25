@@ -175,7 +175,8 @@ class PageHandler {
       }
     } catch (error) {
       console.error("頁面處理失敗:", error);
-      this.showNotification("❌ 分析頁面失敗，請檢查網路連線");
+      this.showNotification("❌ 請檢查網路連線或更新API KEY，測試完成後再試");
+      ConfigManager.resetApiTestStatus();
     }
   }
 
@@ -373,13 +374,13 @@ class PageHandler {
     notification.style.cssText = `
       position: fixed;
       top: 20px;
-      right: 20px;
-      background: #4CAF50;
+      left: 50%;
+      transform: translateX(-50%);
+      background:rgb(76, 175, 80, 0.8);
       color: white;
       padding: 15px;
       border-radius: 5px;
       z-index: 9999;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     `;
     notification.textContent = message;
     document.body.appendChild(notification);
@@ -405,6 +406,15 @@ async function main() {
 
   const pageType = detectPageType();
   console.log("📍 目前頁面類型:", pageType);
+
+  // 檢查登入狀態
+  const loginStatus = checkLoginStatus();
+  if (
+    !loginStatus.isLoggedIn &&
+    (pageType === "activity_detail" || pageType === "activity_game")
+  ) {
+    alert("⚠️ 用戶未登入，建議先登入以獲得更好的搶票體驗");
+  }
 
   // 檢查是否需要自動功能
   const needsAutoFeatures = [
@@ -501,6 +511,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 });
+
+// 檢查登入狀態
+function checkLoginStatus() {
+  console.log("🔍 開始檢查登入狀態...");
+
+  // 檢查登出按鈕/連結
+  let hasLogoutElement = false;
+
+  if (document.getElementById("logout")) {
+    console.log("✅ 找到登出元素");
+    hasLogoutElement = true;
+  }
+
+  // 檢查用戶名稱
+  let hasUserInfo = false;
+  if (document.querySelector(".user-name")) {
+    console.log("✅ 找到用戶名稱");
+    hasUserInfo = true;
+  }
+
+  return {
+    isLoggedIn: hasLogoutElement && hasUserInfo,
+  };
+}
 
 // 啟動主要邏輯
 main();

@@ -57,26 +57,10 @@ def analyze_image():
                     "content": [
                         {
                             "type": "text",
-                            "text": """
-                            你是一個嚴格且沉默的 OCR 解碼器。請依規則讀取圖片中前景白色字母（忽略藍色背景與裝飾），並只輸出 4 個小寫英文字母（a–z）。
-                            禁止輸出說明、標點、空白、換行、代碼框或其他任何字元。
-
-                            1. 字形判斷規則（重點）：
-                                i：上方有圓點；主幹不延伸到基線下方（無下行部）。
-                                j：上方有圓點；主幹明顯延伸到基線下方（有下行部）。
-
-                                若圓點缺失但有下行部 → 判為 j；無下行部 → 判為 i。
-
-                                r：右側是短肩、無閉合圓腹、無下行部。
-                                p：主幹有下行部，右側為閉合圓腹（看起來像 o 貼在右側）。
-                            
-                            2. 以多數字母底緣形成的水平線視為基線；任何筆畫明顯低於基線者視為下行部（關鍵於 j、p）。
-
-                            3. 忽略輕微斷裂、邊緣鋸齒、反鋸齒暈染與小白點；以整體輪廓與是否有閉合圓腹/下行部作為最終依據。
-
-                            4. 僅輸出恰好 4 個小寫英文字母（ASCII），不多不少。若有不確定，根據上述規則選擇最符合輪廓者，不要輸出其他符號或任何說明。
-
-                            5. 輸出格式：僅輸出 4 字母字串，例如：abcd
+                            "text": """妳是驗證碼識別專家，請根據以下規則分析:
+                            1. 幫我分析這張圖片的內容,回傳圖片的文字就好，不要有任何其他文字
+                            2. 回傳的文字必須是四個小寫英文字母
+                            3. r的右邊會有一個小尾巴，會很像p，請特別注意
                             """
                         },
                         {
@@ -109,22 +93,21 @@ def analyze_page():
         data = request.json
         page_type = data.get('pageType')
         html_content = data.get('htmlContent', '')
-        url = data.get('url', '')
         user_settings = data.get('settings', {})
 
         if page_type == 'activity_game':
-            return analyze_activity_page(html_content, url, user_settings)
+            return analyze_activity_page(html_content, user_settings)
         elif page_type == 'ticket_area':
-            return analyze_ticket_area(html_content, url, user_settings)
+            return analyze_ticket_area(html_content, user_settings)
         elif page_type == 'ticket_purchase':
-            return analyze_purchase_page(html_content, url, user_settings)
+            return analyze_purchase_page(html_content, user_settings)
         else:
             return jsonify({'action': 'wait', 'message': '未知頁面類型'})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-def analyze_activity_page(html_content, url, settings):
+def analyze_activity_page(html_content, settings):
     """分析活動頁面，判斷是否要搶票"""
     soup = BeautifulSoup(html_content, 'html.parser')
     
@@ -158,7 +141,7 @@ def analyze_activity_page(html_content, url, settings):
         return jsonify({
             'action': 'refresh',
             'delay': 1000,
-            'message': '檢測到倒數計時，刷新頁面中...'
+            'message': '檢測到開賣，正在刷新頁面中...'
         })
     
     return jsonify({
@@ -166,7 +149,7 @@ def analyze_activity_page(html_content, url, settings):
         'message': '等待開賣或手動操作'
     })
 
-def analyze_ticket_area(html_content, url, settings):
+def analyze_ticket_area(html_content, settings):
     """分析票種選擇頁面，返回要選擇的票種"""
     soup = BeautifulSoup(html_content, 'html.parser')
     
@@ -225,7 +208,7 @@ def analyze_ticket_area(html_content, url, settings):
         'message': '❌ 很可惜，已經沒有票了，可以再重新整理試試看😭'
     })
 
-def analyze_purchase_page(html_content, url, settings):
+def analyze_purchase_page(html_content, settings):
     """分析購票頁面，判斷是否要自動提交"""
     soup = BeautifulSoup(html_content, 'html.parser')
     
@@ -292,10 +275,8 @@ def analyze_purchase_page(html_content, url, settings):
 
 def calculate_ticket_score(text, keywords):
     """計算票種分數，用於選擇最佳票種"""
+
     score = 0
-    
-    # 基本分數
-    score += 1
     
     # 關鍵字匹配加分
     if keywords:
@@ -304,10 +285,19 @@ def calculate_ticket_score(text, keywords):
                 score += 10
     
     # 價格相關優先級（假設更貴的更好）
-    price_match = re.search(r'(\d+)', text)
+    price_match = re.search(r'(\d{3,})', text)
+    if "剩餘" in text:
+        remain_match = re.search(r'(\d{1,})', text.split('剩餘')[1])
+    else:
+        remain_match = None
+
     if price_match:
         price = int(price_match.group(1))
         score += price / 1000  # 價格越高分數越高
+    if remain_match:
+        remain = int(remain_match.group(1))
+        if remain <= 5:
+            score -= 10
     
     # VIP、搖滾區等特殊區域加分
     special_areas = ['vip', '搖滾', 'rock', '前排', 'front']
