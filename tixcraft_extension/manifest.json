@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "拓元搶票助手",
-  "version": "2.0",
+  "version": "3.0",
   "description": "自動搶票、填寫驗證碼、選擇票種和票數",
   "permissions": ["storage", "activeTab", "tabs", "notifications"],
   "host_permissions": [
