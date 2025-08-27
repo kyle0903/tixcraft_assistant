@@ -127,22 +127,22 @@ def analyze_activity_page(html_content, settings):
             'message': '找到購買按鈕，正在進入購票頁面...'
         })
     
-    # # 檢查倒數計時
-    # countdown_elements = soup.find_all(class_="gridc fcTxt")
-    # has_countdown = False
-    # exclude_keywords = ['截止', '售完', '售罄', '結束']
+    # 檢查倒數計時
+    countdown_elements = soup.find_all(class_="gridc fcTxt")
+    has_countdown = False
+    exclude_keywords = ['截止', '售完', '售罄', '結束']
     
-    # for element in countdown_elements:
-    #     if element and 'text-center' in str(element) and not any(keyword in str(element) for keyword in exclude_keywords):
-    #         has_countdown = True
-    #         break
+    for element in countdown_elements:
+        if element and 'text-center' in str(element) and not any(keyword in str(element) for keyword in exclude_keywords):
+            has_countdown = True
+            break
     
-    # if has_countdown and settings.get('autoGrab', False):
-    #     return jsonify({
-    #         'action': 'refresh',
-    #         'delay': 1000,
-    #         'message': '檢測到開賣，正在刷新頁面中...'
-    #     })
+    if has_countdown and settings.get('autoGrab', False):
+        return jsonify({
+            'action': 'refresh',
+            'delay': 1000,
+            'message': '檢測到開賣，正在刷新頁面中...'
+        })
     
     return jsonify({
         'action': 'wait',
