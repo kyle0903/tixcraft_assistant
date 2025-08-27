@@ -3,7 +3,7 @@ class ConfigManager {
   // 預設設定
   static defaults = {
     // API 設定
-    apiUrl: "https://tixcraft-api-820504025283.asia-east1.run.app",
+    apiUrl: "https://tixcraft-api-729408356870.asia-east1.run.app",
     apiKey: "",
     timeout: 30000,
     retryCount: 3,
