@@ -234,7 +234,7 @@ class PageHandler {
         break;
 
       case "refresh":
-        const delay = instruction.delay || 1000;
+        const delay = instruction.delay || 500;
         this.console.log(`🔄 ${delay}ms後刷新頁面`);
         setTimeout(() => {
           location.reload();

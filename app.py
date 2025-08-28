@@ -140,7 +140,7 @@ def analyze_activity_page(html_content, settings):
     if has_countdown and settings.get('autoGrab', False):
         return jsonify({
             'action': 'refresh',
-            'delay': 1000,
+            'delay': 500,
             'message': '檢測到開賣，正在刷新頁面中...'
         })
     
@@ -162,6 +162,7 @@ def analyze_ticket_area(html_content, settings):
     
     exclude_keywords = ['wheelchair', '身障', '愛心', '陪同', '登出', 'logout']
     user_keywords = settings.get('keywords', [])
+    user_ticket_count = settings.get('ticketCount', '4')
     
     for link in ticket_links:
         if link.parent and link.parent.name == 'li':
@@ -180,7 +181,7 @@ def analyze_ticket_area(html_content, settings):
                 'id': link.get('id'),
                 'text': link.get_text().strip(),
                 'href': link.get('href', ''),
-                'score': calculate_ticket_score(text, user_keywords)
+                'score': calculate_ticket_score(text, user_keywords, user_ticket_count)
             })
     
     if valid_tickets:
@@ -193,19 +194,30 @@ def analyze_ticket_area(html_content, settings):
             'message': f'🎫 自動選擇票種: {best_ticket["text"]}'
         })
     
-    # 如果沒有符合條件的票種，選擇第一個可用的
+    # 如果沒有符合條件的票種，選擇第一個可用的，但先檢查剩餘數量
     if user_keywords:
         for ticket in ticket_links:
             if ticket.get('id') and ticket.get('id') != 'logoLink' and not any(keyword in ticket.get_text().lower() for keyword in exclude_keywords):
+                if ticket.get_text().strip() != '':
+                    if "剩餘" in ticket.get_text().strip():
+                        remain_count = int(ticket.get_text().strip().split('剩餘')[1])
+                        if remain_count < int(user_ticket_count):
+                            continue
+                    return jsonify({
+                        'action': 'click',
+                        'selector': f"#{ticket.get('id')}",
+                        'message': f'🎫 找不到符合條件的票種，選擇第一個可用票種:\n {ticket.get_text().strip()}'
+                    })
                 return jsonify({
-                    'action': 'click',
-                    'selector': f"#{ticket.get('id')}",
-                    'message': f'🎫 找不到符合條件的票種，選擇第一個可用票種:\n {ticket.get_text().strip()}'
+                    'action': 'refresh',
+                    'delay': 500,
+                    'message': '🎫 找不到符合條件的票種，正在重新整理頁面中...'
                 })
     
     return jsonify({
-        'action': 'wait',
-        'message': '❌ 很可惜，已經沒有票了，可以再重新整理試試看😭'
+        'action': 'refresh',
+        'delay': 500,
+        'message': '❌ 很可惜，已經沒有票了，正在重新整理頁面中😭'
     })
 
 def analyze_purchase_page(html_content, settings):
@@ -230,12 +242,20 @@ def analyze_purchase_page(html_content, settings):
     for select in selects:
         options = select.find_all('option')
         valid_options = [opt for opt in options if opt.get('value') in ['1', '2', '3', '4']]
+        valid_values = [opt.get('value') for opt in valid_options]
         
         if valid_options:
+            # 決定要選哪個數量
+            if ticket_count in valid_values:
+                value_to_select = ticket_count
+            else:
+                # 選擇選項中最大的數量
+                value_to_select = max(valid_values, key=int)
+            
             actions.append({
                 'action': 'setValue',
                 'selector': f"#{select.get('id')}" if select.get('id') else 'select',
-                'value': ticket_count
+                'value': value_to_select
             })
             break
     
@@ -273,7 +293,7 @@ def analyze_purchase_page(html_content, settings):
         'message': '準備填寫購票資訊'
     })
 
-def calculate_ticket_score(text, keywords):
+def calculate_ticket_score(text, keywords, ticket_count):
     """計算票種分數，用於選擇最佳票種"""
 
     score = 0
@@ -296,8 +316,8 @@ def calculate_ticket_score(text, keywords):
         score += price / 1000  # 價格越高分數越高
     if remain_match:
         remain = int(remain_match.group(1))
-        if remain <= 5:
-            score -= 10
+        if remain < int(ticket_count):
+            score -= 100
     
     # VIP、搖滾區等特殊區域加分
     special_areas = ['vip', '搖滾', 'rock', '前排', 'front']
