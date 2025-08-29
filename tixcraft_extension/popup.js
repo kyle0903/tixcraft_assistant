@@ -125,6 +125,7 @@ document
         // 票種和購票設定
         keywords: keywords,
         ticketCount: document.getElementById("ticketCount").value,
+        allowLessTickets: document.getElementById("allowLessTickets").checked,
       };
 
       // 驗證設定

@@ -163,6 +163,7 @@ def analyze_ticket_area(html_content, settings):
     exclude_keywords = ['wheelchair', '身障', '愛心', '陪同', '登出', 'logout']
     user_keywords = settings.get('keywords', [])
     user_ticket_count = settings.get('ticketCount', '4')
+    allow_less_tickets = settings.get('allowLessTickets', False)
     
     for link in ticket_links:
         if link.parent and link.parent.name == 'li':
@@ -181,7 +182,7 @@ def analyze_ticket_area(html_content, settings):
                 'id': link.get('id'),
                 'text': link.get_text().strip(),
                 'href': link.get('href', ''),
-                'score': calculate_ticket_score(text, user_keywords, user_ticket_count)
+                'score': calculate_ticket_score(text, user_keywords, user_ticket_count, allow_less_tickets)
             })
     
     if valid_tickets:
@@ -201,7 +202,7 @@ def analyze_ticket_area(html_content, settings):
                 if ticket.get_text().strip() != '':
                     if "剩餘" in ticket.get_text().strip():
                         remain_count = int(ticket.get_text().strip().split('剩餘')[1])
-                        if remain_count < int(user_ticket_count):
+                        if remain_count < int(user_ticket_count) and not allow_less_tickets:
                             continue
                     return jsonify({
                         'action': 'click',
@@ -293,7 +294,7 @@ def analyze_purchase_page(html_content, settings):
         'message': '準備填寫購票資訊'
     })
 
-def calculate_ticket_score(text, keywords, ticket_count):
+def calculate_ticket_score(text, keywords, ticket_count, allow_less_tickets):
     """計算票種分數，用於選擇最佳票種"""
 
     score = 0
@@ -316,7 +317,7 @@ def calculate_ticket_score(text, keywords, ticket_count):
         score += price / 1000  # 價格越高分數越高
     if remain_match:
         remain = int(remain_match.group(1))
-        if remain < int(ticket_count):
+        if remain < int(ticket_count) and not allow_less_tickets:
             score -= 100
     
     # VIP、搖滾區等特殊區域加分

@@ -20,6 +20,7 @@ class ConfigManager {
     keywords: [],
     ticketCount: "1",
     autoSubmit: false,
+    allowLessTickets: false,
   };
 
   // 取得設定

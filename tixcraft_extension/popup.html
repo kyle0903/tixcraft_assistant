@@ -149,6 +149,15 @@
           <label for="ticketCount">票券數量：</label>
           <input type="number" id="ticketCount" min="1" max="4" value="1" />
         </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="allowLessTickets" />
+            允許少於設定數量的票券
+          </label>
+          <small
+            >開啟後，若該票種沒有足夠票數，會選擇該票種的最大可購數量；關閉則會跳過該票種</small
+          >
+        </div>
       </div>
 
       <!-- 狀態顯示 -->

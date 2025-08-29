@@ -12,6 +12,7 @@ chrome.runtime.onInstalled.addListener(() => {
     keywords: [],
     ticketCount: "1",
     autoSubmit: false,
+    allowLessTickets: false,
   });
 });
 
