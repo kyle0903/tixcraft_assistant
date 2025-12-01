@@ -1,74 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <style>
-      body {
-        width: 300px;
-        padding: 15px;
-        font-family: Arial, sans-serif;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-      .setting-group {
-        border: 1px solid #ddd;
-        padding: 10px;
-        border-radius: 4px;
-      }
-      .setting-item {
-        margin: 10px 0;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-      }
-      input[type="text"],
-      input[type="number"],
-      input[type="url"],
-      input[type="password"] {
-        width: 100%;
-        padding: 5px;
-        margin: 5px 0;
-      }
-      button {
-        padding: 8px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        width: 100%;
-      }
-      button:hover {
-        background-color: #45a049;
-      }
-      button:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-      }
-      .status {
-        color: #4caf50;
-        margin-top: 10px;
-        text-align: center;
-      }
-      #serverStatus {
-        font-size: 12px;
-        padding: 3px;
-        border-radius: 3px;
-        background-color: #f5f5f5;
-      }
-      small {
-        color: #666;
-        font-size: 10px;
-      }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拓元搶票助手</title>
+    <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div class="container">
-      <h3>拓元搶票助手</h3>
+      <h3>🎫 拓元搶票助手</h3>
 
       <!-- API 設定 -->
       <div class="setting-group">
@@ -89,15 +29,10 @@
           <small>用於 OCR 服務認證</small>
         </div>
         <div class="setting-item">
-          <button id="testApi" style="background-color: #2196f3; width: 100%">
-            🔌測試 API 連線
+          <button id="testApi">
+            🔌 測試 API 連線
           </button>
-          <div
-            id="apiTestResult"
-            style="margin-top: 5px; font-size: 12px; text-align: center"
-          >
-            點擊按鈕測試 API 連線狀態
-          </div>
+          <div id="apiTestResult"></div>
         </div>
       </div>
 
@@ -167,9 +102,7 @@
       </div>
 
       <button id="saveSettings">💾 儲存設定</button>
-      <button id="stopAll" style="background-color: #f44336">
-        ⏹️ 停止所有自動化
-      </button>
+      <button id="stopAll">⏹️ 停止所有自動化</button>
       <div id="status" class="status"></div>
     </div>
 

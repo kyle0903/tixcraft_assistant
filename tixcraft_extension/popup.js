@@ -33,6 +33,8 @@ async function loadSettings() {
 
     // 購票設定
     document.getElementById("ticketCount").value = config.ticketCount || "1";
+    document.getElementById("allowLessTickets").checked =
+      config.allowLessTickets || false;
 
     // 載入 API 測試狀態
     apiTestStatus = {
@@ -146,6 +148,19 @@ document
 
       const status = document.getElementById("status");
       status.textContent = "✅ 設定已儲存！";
+
+      // 檢查是否有啟用任何自動化功能
+      const hasAutoFeatures = newConfig.autoRedirect ||
+                               newConfig.autoGrab ||
+                               newConfig.autoSelectTicket ||
+                               newConfig.autoSubmit;
+
+      // 如果啟用了自動化功能，提醒用戶要登入
+      if (hasAutoFeatures) {
+        setTimeout(() => {
+          alert("⚠️ 提醒：使用自動搶票功能前，請記得先登入拓元會員，以確保搶票順利進行！");
+        }, 100);
+      }
 
       // 更新設定
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {

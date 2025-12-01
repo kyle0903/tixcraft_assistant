@@ -407,15 +407,6 @@ async function main() {
   const pageType = detectPageType();
   console.log("📍 目前頁面類型:", pageType);
 
-  // 檢查登入狀態
-  const loginStatus = checkLoginStatus();
-  if (
-    !loginStatus.isLoggedIn &&
-    (pageType === "activity_detail" || pageType === "activity_game")
-  ) {
-    alert("⚠️ 用戶未登入，建議先登入以獲得更好的搶票體驗");
-  }
-
   // 檢查是否需要自動功能
   const needsAutoFeatures = [
     "activity_game",
@@ -511,30 +502,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 });
-
-// 檢查登入狀態
-function checkLoginStatus() {
-  console.log("🔍 開始檢查登入狀態...");
-
-  // 檢查登出按鈕/連結
-  let hasLogoutElement = false;
-
-  if (document.getElementById("logout")) {
-    console.log("✅ 找到登出元素");
-    hasLogoutElement = true;
-  }
-
-  // 檢查用戶名稱
-  let hasUserInfo = false;
-  if (document.querySelector(".user-name")) {
-    console.log("✅ 找到用戶名稱");
-    hasUserInfo = true;
-  }
-
-  return {
-    isLoggedIn: hasLogoutElement && hasUserInfo,
-  };
-}
 
 // 啟動主要邏輯
 main();
