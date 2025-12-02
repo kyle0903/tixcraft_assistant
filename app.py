@@ -11,7 +11,10 @@ from bs4 import BeautifulSoup
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # 允許跨域請求
+
+# 完整的 CORS 配置，支持私有網絡訪問
+CORS(app)
+
 # 初始化 OpenAI 客戶端
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 x_api_key = os.getenv('X-API-KEY')

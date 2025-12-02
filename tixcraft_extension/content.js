@@ -48,24 +48,22 @@ async function getCode(imageUrl) {
       headers["X-API-Key"] = config.apiKey;
     }
 
-    const response = await fetch(apiUrl, {
+    // 通過 background script 發送請求（繞過 CORS）
+    const response = await chrome.runtime.sendMessage({
+      action: "apiRequest",
+      url: apiUrl,
       method: "POST",
       headers: headers,
-      body: JSON.stringify({
+      body: {
         image: base64Image,
-      }),
+      },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("API Key 無效，請檢查擴充功能設定");
-      }
-      console.log(response);
-      throw new Error("後端服務錯誤");
+    if (!response.success) {
+      throw new Error(response.error || "後端服務錯誤");
     }
 
-    const data = await response.json();
-    return data.text;
+    return response.data.text;
   } catch (error) {
     console.error("Error:", error);
     return null;
@@ -192,28 +190,28 @@ class PageHandler {
       ? config.apiUrl + "analyze-page"
       : config.apiUrl + "/analyze-page";
 
-    const response = await fetch(apiUrl, {
+    // 通過 background script 發送請求（繞過 CORS）
+    const response = await chrome.runtime.sendMessage({
+      action: "apiRequest",
+      url: apiUrl,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-API-Key": config.apiKey,
       },
-      body: JSON.stringify({
+      body: {
         pageType: pageType,
         htmlContent: htmlContent,
         url: url,
         settings: settings,
-      }),
+      },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("API Key 無效");
-      }
-      throw new Error(`後端服務錯誤: ${response.status}`);
+    if (!response.success) {
+      throw new Error(response.error || "後端服務錯誤");
     }
 
-    return await response.json();
+    return response.data;
   }
 
   // 執行後端返回的指令

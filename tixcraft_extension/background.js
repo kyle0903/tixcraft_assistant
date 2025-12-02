@@ -35,3 +35,33 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
   }
 });
+
+// 處理來自 content script 的 API 請求（繞過 CORS 限制）
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "apiRequest") {
+    // 使用 background script 發送請求，不受 CORS 限制
+    fetch(request.url, {
+      method: request.method || "POST",
+      headers: request.headers || {},
+      body: request.body ? JSON.stringify(request.body) : undefined,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((text) => {
+            throw new Error(`HTTP ${response.status}: ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        sendResponse({ success: true, data: data });
+      })
+      .catch((error) => {
+        console.error("API 請求失敗:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+
+    // 返回 true 表示會異步發送響應
+    return true;
+  }
+});
